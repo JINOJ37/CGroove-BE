@@ -12,7 +12,7 @@ import lombok.*;
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "unique_user_event",
-                        columnNames = {"user_id", "event_id"}  // Unique 설정 -> 중복 신청 방지
+                        columnNames = {"user_id", "event_id"}
                 )
         }
 )

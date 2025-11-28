@@ -21,7 +21,9 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final FileStorageService fileStorageService;
     private final PostService postService;
+    private final EventService eventService;
     private final ClubJoinService clubJoinService;
+    private final EventJoinService eventJoinService;
     private final EntityManager em;
 
     @Transactional
@@ -101,7 +103,9 @@ public class UserService {
         }
 
         postService.softDeleteByUserId(userId);
+        eventService.softDeleteByUserId(userId);
         clubJoinService.softDeleteByUserId(userId);
+        eventJoinService.softDeleteByUserId(userId);
         user.delete();
 
         em.flush();

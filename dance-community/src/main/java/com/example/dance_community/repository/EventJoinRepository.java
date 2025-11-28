@@ -5,6 +5,9 @@ import com.example.dance_community.entity.EventJoin;
 import com.example.dance_community.entity.User;
 import com.example.dance_community.enums.EventJoinStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -16,11 +19,19 @@ public interface EventJoinRepository extends JpaRepository<EventJoin, Long> {
 
     List<EventJoin> findByParticipant(User user);
 
-    boolean existsByParticipantAndEvent(User user, Event event);
-
-    void deleteByParticipantAndEvent(User user, Event event);
-
     Optional<EventJoin> findByParticipant_UserIdAndEvent_EventId(Long userId, Long eventId);
 
     long countByEvent_EventIdAndStatus(Long eventId, EventJoinStatus status);
+
+    @Modifying()
+    @Query("UPDATE EventJoin cj SET cj.status = :status WHERE cj.user.userId = :userId")
+    void softDeleteByUserId(@Param("userId") Long userId, @Param("status") EventJoinStatus status);
+
+    @Modifying
+    @Query("update EventJoin ej set ej.status = :status where ej.event.clubId = :clubId")
+    void softDeleteByClubId(@Param("clubId") Long clubId, @Param("status") EventJoinStatus status);
+
+    @Modifying
+    @Query("update EventJoin ej set ej.status = :status where ej.event.eventId = :eventId")
+    void softDeleteByEventId(@Param("eventId") Long eventId, @Param("status") EventJoinStatus status);
 }

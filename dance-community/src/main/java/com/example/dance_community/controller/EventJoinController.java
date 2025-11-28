@@ -1,13 +1,11 @@
 package com.example.dance_community.controller;
 
 import com.example.dance_community.dto.ApiResponse;
-import com.example.dance_community.dto.eventJoin.EventJoinCreateRequest;
 import com.example.dance_community.dto.eventJoin.EventJoinResponse;
 import com.example.dance_community.security.UserDetail;
 import com.example.dance_community.service.EventJoinService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,45 +15,71 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/event-joins")
+@RequestMapping("/events")
 @RequiredArgsConstructor
 @Tag(name = "7_EventJoin", description = "행사 신청 관련 API")
 public class EventJoinController {
     private final EventJoinService eventJoinService;
 
+    // 일반 사용자용
     @Operation(summary = "행사 신청", description = "행사에 신청합니다.")
-    @PostMapping()
-    public ResponseEntity<ApiResponse<EventJoinResponse>> createEventJoin(@AuthenticationPrincipal UserDetail userDetail, @Valid @RequestBody EventJoinCreateRequest eventJoinCreateRequest) {
-        EventJoinResponse eventJoinResponse = eventJoinService.createEventJoin(userDetail.getUserId(), eventJoinCreateRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>("행사 신청 성공", eventJoinResponse));
+    @PostMapping("/{eventId}/apply")
+    public ResponseEntity<ApiResponse<EventJoinResponse>> applyEvent(
+            @AuthenticationPrincipal UserDetail userDetail,
+            @PathVariable Long eventId
+    ) {
+        EventJoinResponse response = eventJoinService.applyEvent(userDetail.getUserId(), eventId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>("행사 신청 성공", response));
     }
 
-    @Operation(summary = "사용자가 신청한 행사 조회", description = "특정 사용자가 신청한 모든 행사 정보를 불러옵니다.")
-    @GetMapping("/event")
-    public ResponseEntity<ApiResponse<List<EventJoinResponse>>> getUserEvents(@AuthenticationPrincipal UserDetail userDetail) {
-        List<EventJoinResponse> eventJoinResponses = eventJoinService.getUserEvents(userDetail.getUserId());
-        return ResponseEntity.ok(new ApiResponse<>("사용자가 신청한 행사 조회 성공", eventJoinResponses));
+    @Operation(summary = "행사 신청 취소", description = "신청했던 행사를 취소합니다.")
+    @DeleteMapping("/{eventId}/apply")
+    public ResponseEntity<ApiResponse<Void>> cancelEventJoin(
+            @AuthenticationPrincipal UserDetail userDetail,
+            @PathVariable Long eventId
+    ) {
+        eventJoinService.cancelEventJoin(userDetail.getUserId(), eventId);
+        return ResponseEntity.ok(new ApiResponse<>("행사 신청 취소 성공", null));
     }
 
-    @Operation(summary = "행사에 신청한 사용자 조회", description = "특정 행사에 신청한 모든 사용자의 정보를 불러옵니다.")
-    @GetMapping("/user/{eventId}")
-    public ResponseEntity<ApiResponse<List<EventJoinResponse>>> getEventUsers(@PathVariable Long eventId) {
-        List<EventJoinResponse> eventJoinResponses = eventJoinService.getEventUsers(eventId);
-        return ResponseEntity.ok(new ApiResponse<>("행사에 신청한 사용자 조회 성공", eventJoinResponses));
+    @Operation(summary = "내 신청 상태 조회", description = "특정 행사에 대한 나의 신청 상태를 조회합니다.")
+    @GetMapping("/{eventId}/my-status")
+    public ResponseEntity<ApiResponse<EventJoinResponse>> getMyJoinStatus(
+            @AuthenticationPrincipal UserDetail userDetail,
+            @PathVariable Long eventId
+    ) {
+        EventJoinResponse response = eventJoinService.getJoinStatus(userDetail.getUserId(), eventId);
+        return ResponseEntity.ok(new ApiResponse<>("내 신청 상태 조회 성공", response));
     }
 
-    @Operation(summary = "행사 신청 확인", description = "특정 사용자가 특정 행사에 신청했는지 확인합니다.")
-    @GetMapping("/check/{eventId}")
-    public ResponseEntity<Boolean> checkApplication(@AuthenticationPrincipal UserDetail userDetail, @PathVariable Long eventId) {
-        boolean isApplied = eventJoinService.isEventJoin(userDetail.getUserId(), eventId);
-        return ResponseEntity.ok(isApplied);
+    @Operation(summary = "내 행사 신청 목록 조회", description = "내가 신청한 행사 목록을 조회합니다.")
+    @GetMapping("/my-joins")
+    public ResponseEntity<ApiResponse<List<EventJoinResponse>>> getMyEvents(
+            @AuthenticationPrincipal UserDetail userDetail
+    ) {
+        List<EventJoinResponse> responses = eventJoinService.getUserEvents(userDetail.getUserId());
+        return ResponseEntity.ok(new ApiResponse<>("내 신청 목록 조회 성공", responses));
     }
 
-    @Operation(summary = "행사 신청 취소", description = "행사 신청을 취소합니다.")
-    @DeleteMapping("/{eventId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ResponseEntity<Void> deleteEventJoin(@AuthenticationPrincipal UserDetail userDetail, @PathVariable Long eventId) {
-        eventJoinService.deleteEventJoin(userDetail.getUserId(), eventId);
-        return ResponseEntity.noContent().build();
+    // 주최자 및 조회용
+    @Operation(summary = "행사 참여자 목록 조회", description = "해당 행사의 확정된 참여자 목록을 조회합니다.")
+    @GetMapping("/{eventId}/participants")
+    public ResponseEntity<ApiResponse<List<EventJoinResponse>>> getEventParticipants(
+            @PathVariable Long eventId
+    ) {
+        List<EventJoinResponse> responses = eventJoinService.getEventUsers(eventId);
+        return ResponseEntity.ok(new ApiResponse<>("참여자 목록 조회 성공", responses));
+    }
+
+    @Operation(summary = "행사 신청 거절", description = "행사 신청을 거절합니다.")
+    @PostMapping("/{eventId}/participation/{participantId}/reject")
+    public ResponseEntity<ApiResponse<Void>> rejectParticipation(
+            @AuthenticationPrincipal UserDetail userDetail,
+            @PathVariable Long eventId,
+            @PathVariable Long participantId
+    ) {
+        eventJoinService.rejectParticipation(userDetail.getUserId(), eventId, participantId);
+        return ResponseEntity.ok(new ApiResponse<>("행사 신청 거절 성공", null));
     }
 }

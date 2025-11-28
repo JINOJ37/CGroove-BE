@@ -9,6 +9,7 @@ import com.example.dance_community.entity.Post;
 import com.example.dance_community.entity.User;
 import com.example.dance_community.enums.EventType;
 import com.example.dance_community.enums.Scope;
+import com.example.dance_community.exception.AccessDeniedException;
 import com.example.dance_community.exception.InvalidRequestException;
 import com.example.dance_community.exception.NotFoundException;
 import com.example.dance_community.repository.EventRepository;
@@ -74,10 +75,7 @@ public class EventService {
     @Transactional
     public EventResponse updateEvent(Long userId, Long eventId, EventUpdateRequest request) {
         Event event = getActiveEvent(eventId);
-
-        if (!event.getHost().getUserId().equals(userId)) {
-            throw new InvalidRequestException("수정 권한이 없습니다");
-        }
+        checkHost(userId, event);
 
         event.updateEvent(
                 request.getTitle(), request.getContent(), request.getTags(),
@@ -94,26 +92,18 @@ public class EventService {
     @Transactional
     public void deleteEvent(Long userId, Long eventId) {
         Event event = getActiveEvent(eventId);
-        if (!event.getHost().getUserId().equals(userId)) {
-            throw new InvalidRequestException("삭제 권한이 없습니다");
-        }
-
-        if (event.getImages() != null) {
-            for (String img : event.getImages()) {
-                fileStorageService.deleteFile(img);
-            }
-        }
-
-        eventRepository.softDeleteJoinsByEventId(eventId);
+        checkHost(userId, event);
         event.delete();
-
-        em.flush();
-        em.clear();
     }
 
     public Event getActiveEvent(Long eventId) {
         return eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("행사 조회 실패"));
+    }
+    private void checkHost(Long userId, Event event) {
+        if (!event.getHost().getUserId().equals(userId)) {
+            throw new InvalidRequestException("권한이 없습니다");
+        }
     }
     private void handleImageUpdate(Event event, List<String> newImages, List<String> keepImages) {
         if (keepImages == null) {
@@ -150,4 +140,9 @@ public class EventService {
 
         event.updateImages(finalImages);
     }
+
+    public void softDeleteByUserId(Long userId) {
+        eventRepository.softDeleteByUserId(userId);
+    }
+    public void softDeleteByClubId(Long clubId) { eventRepository.softDeleteByClubId(clubId);}
 }

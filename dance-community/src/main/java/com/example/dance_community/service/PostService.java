@@ -86,7 +86,7 @@ public class PostService {
     }
     private void checkAuthor(Long userId, Post post) {
         if (!post.getAuthor().getUserId().equals(userId)) {
-            throw new AccessDeniedException("수정 권한이 없습니다");
+            throw new AccessDeniedException("권한이 없습니다");
         }
     }
     private void handleImageUpdate(Post post, List<String> newImages, List<String> keepImages) {

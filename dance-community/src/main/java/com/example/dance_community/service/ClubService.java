@@ -9,6 +9,7 @@ import com.example.dance_community.enums.ClubJoinStatus;
 import com.example.dance_community.enums.ClubRole;
 import com.example.dance_community.exception.NotFoundException;
 import com.example.dance_community.repository.ClubRepository;
+import com.example.dance_community.repository.EventRepository;
 import com.example.dance_community.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,9 @@ public class ClubService {
     private final UserRepository userRepository;
     private final ClubAuthService clubAuthService;
     private final ClubJoinService clubJoinService;
+    private final EventJoinService eventJoinService;
     private final PostService postService;
+    private final EventService eventService;
     private final FileStorageService fileStorageService;
     private final EntityManager em;
 
@@ -90,8 +93,10 @@ public class ClubService {
             fileStorageService.deleteFile(club.getClubImage());
         }
 
-        clubJoinService.softDeleteByClubId(clubId);
         postService.softDeleteByClubId(clubId);
+        eventService.softDeleteByClubId(clubId);
+        clubJoinService.softDeleteByClubId(clubId);
+        eventJoinService.softDeleteByClubId(clubId);
 
         club.delete();
 
