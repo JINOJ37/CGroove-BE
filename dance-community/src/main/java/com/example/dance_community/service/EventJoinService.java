@@ -117,7 +117,4 @@ public class EventJoinService {
     public void softDeleteByClubId(Long clubId) {
         eventJoinRepository.softDeleteByClubId(clubId, EventJoinStatus.CANCELED);
     }
-    public void softDeleteByEventId(Long eventId) {
-        eventJoinRepository.softDeleteByEventId(eventId, EventJoinStatus.CANCELED);
-    }
 }

@@ -24,11 +24,11 @@ public interface EventJoinRepository extends JpaRepository<EventJoin, Long> {
     long countByEvent_EventIdAndStatus(Long eventId, EventJoinStatus status);
 
     @Modifying()
-    @Query("UPDATE EventJoin cj SET cj.status = :status WHERE cj.user.userId = :userId")
+    @Query("UPDATE EventJoin cj SET cj.status = :status WHERE cj.participant.userId = :userId")
     void softDeleteByUserId(@Param("userId") Long userId, @Param("status") EventJoinStatus status);
 
     @Modifying
-    @Query("update EventJoin ej set ej.status = :status where ej.event.clubId = :clubId")
+    @Query("update EventJoin ej set ej.status = :status where ej.event.club.clubId = :clubId")
     void softDeleteByClubId(@Param("clubId") Long clubId, @Param("status") EventJoinStatus status);
 
     @Modifying

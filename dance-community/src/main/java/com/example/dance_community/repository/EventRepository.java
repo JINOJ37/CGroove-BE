@@ -18,10 +18,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     Optional<Event> findWithLockByEventId(@Param("eventId") Long eventId);
 
     @Modifying()
-    @Query("UPDATE EVENT p SET p.isDeleted = true WHERE p.host.userId = :userId")
+    @Query("UPDATE Event e SET e.isDeleted = true WHERE e.host.userId = :userId")
     void softDeleteByUserId(@Param("userId") Long userId);
 
     @Modifying()
-    @Query("UPDATE EVENT p SET p.isDeleted = true WHERE p.club.clubId = :clubId")
+    @Query("UPDATE Event e SET e.isDeleted = true WHERE e.club.clubId = :clubId")
     void softDeleteByClubId(@Param("clubId") Long clubId);
 }

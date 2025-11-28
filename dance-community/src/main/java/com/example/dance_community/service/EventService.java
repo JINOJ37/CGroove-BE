@@ -7,11 +7,13 @@ import com.example.dance_community.entity.Club;
 import com.example.dance_community.entity.Event;
 import com.example.dance_community.entity.Post;
 import com.example.dance_community.entity.User;
+import com.example.dance_community.enums.EventJoinStatus;
 import com.example.dance_community.enums.EventType;
 import com.example.dance_community.enums.Scope;
 import com.example.dance_community.exception.AccessDeniedException;
 import com.example.dance_community.exception.InvalidRequestException;
 import com.example.dance_community.exception.NotFoundException;
+import com.example.dance_community.repository.EventJoinRepository;
 import com.example.dance_community.repository.EventRepository;
 import com.example.dance_community.repository.UserRepository;
 import jakarta.persistence.EntityManager;
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 public class EventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
+    private final EventJoinRepository eventJoinRepository;
     private final ClubAuthService clubAuthService;
     private final FileStorageService fileStorageService;
     private final EntityManager em;
@@ -93,7 +96,18 @@ public class EventService {
     public void deleteEvent(Long userId, Long eventId) {
         Event event = getActiveEvent(eventId);
         checkHost(userId, event);
+
+        if (event.getImages() != null && !event.getImages().isEmpty()) {
+            for (String imagePath : event.getImages()) {
+                fileStorageService.deleteFile(imagePath);
+            }
+        }
+
+        eventJoinRepository.softDeleteByEventId(eventId, EventJoinStatus.CANCELED);
         event.delete();
+
+        em.flush();
+        em.clear();
     }
 
     public Event getActiveEvent(Long eventId) {
