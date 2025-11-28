@@ -9,13 +9,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ClubJoinRepository extends JpaRepository<ClubJoin, Long> {
     List<ClubJoin> findByClub_ClubIdAndStatus(Long clubId, ClubJoinStatus status);
     List<ClubJoin> findByUser_UserIdAndStatus(Long userId, ClubJoinStatus status);
 
-    ClubJoin findByUser_UserIdAndClub_ClubId(Long userId, Long clubId);
+    Optional<ClubJoin> findByUser_UserIdAndClub_ClubId(Long userId, Long clubId);
     boolean existsByUser_UserIdAndClub_ClubId(Long userId, Long clubId);
 
     @Modifying()

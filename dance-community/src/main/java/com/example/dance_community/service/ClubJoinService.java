@@ -28,7 +28,7 @@ public class ClubJoinService {
     // 일반 사용자용
     @Transactional
     public ClubJoinResponse applyToClub(Long userId, Long clubId) {
-        ClubJoin clubJoin = clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId);
+        ClubJoin clubJoin = clubAuthService.findClubJoin(userId, clubId);
 
         if (clubJoin != null) {
             if (clubJoin.getStatus() == ClubJoinStatus.PENDING || clubJoin.getStatus() == ClubJoinStatus.ACTIVE) {
@@ -132,13 +132,7 @@ public class ClubJoinService {
 
     // 조회용
     public ClubJoinResponse getJoinStatus(Long userId, Long clubId) {
-        ClubJoin clubJoin = clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId);
-
-        if (clubJoin == null) {
-            throw new NotFoundException("가입 정보를 찾을 수 없습니다");
-        }
-
-        return ClubJoinResponse.from(clubJoin);
+        return ClubJoinResponse.from(clubAuthService.findClubJoin(userId, clubId));
     }
 
     public List<ClubJoinResponse> getActiveMembers(Long clubId) {

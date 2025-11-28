@@ -19,11 +19,7 @@ public class ClubAuthService {
     private final ClubJoinRepository clubJoinRepository;
 
     public void validateClubAuthority(Long userId, Long clubId) {
-        ClubJoin clubJoin = clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId);
-
-        if (clubJoin == null) {
-            throw new AuthException("클럽 멤버가 아닙니다");
-        }
+        ClubJoin clubJoin = findClubJoin(userId, clubId);
 
         if (!clubJoin.hasManagementPermission()) {
             throw new AuthException("클럽 권한이 없습니다");
@@ -31,7 +27,7 @@ public class ClubAuthService {
     }
 
     public void validateLeaderAuthority(Long userId, Long clubId) {
-        ClubJoin clubJoin = clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId);
+        ClubJoin clubJoin = findClubJoin(userId, clubId);
 
         if (clubJoin == null || clubJoin.getRole() != ClubRole.LEADER) {
             throw new AuthException("클럽 리더만 가능합니다");
@@ -44,10 +40,7 @@ public class ClubAuthService {
     }
 
     public ClubJoin findClubJoin(Long userId, Long clubId) {
-        ClubJoin clubJoin = clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId);
-        if (clubJoin == null) {
-            throw new NotFoundException("클럽 가입 정보를 찾을 수 없습니다");
-        }
-        return clubJoin;
+        return clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId)
+                .orElseThrow(() -> new AuthException("클럽 멤버가 아닙니다"));
     }
 }

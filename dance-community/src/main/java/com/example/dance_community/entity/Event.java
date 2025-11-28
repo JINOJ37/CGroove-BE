@@ -19,6 +19,7 @@ import java.util.List;
 @SQLRestriction("is_deleted = false")
 @SQLDelete(sql = "UPDATE events SET is_deleted = true WHERE event_id = ?")
 public class Event extends BaseEntity{
+
     // 행사 ID
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -77,7 +78,7 @@ public class Event extends BaseEntity{
     private Long capacity;
 
     // 행사 참가자 목록
-    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "event")
     private List<EventJoin> participants = new ArrayList<>();
 
     // 행사 일시 (시작, 종료 시간)
@@ -109,23 +110,22 @@ public class Event extends BaseEntity{
         this.startsAt = startsAt;
         this.endsAt = endsAt;
     }
+
     public Event setHost(User host) {
         this.host = host;
         return this;
     }
 
     // UPDATE
-    public Event updateEvent(String title, String content, List<String> tags, List<String> images,
-                            String locationName, String locationAddress, String locationLink, Long capacity,
-                            LocalDateTime startsAt, LocalDateTime endsAt) {
+    public Event updateEvent(String title, String content, List<String> tags,
+                            String locationName, String locationAddress, String locationLink,
+                             Long capacity, LocalDateTime startsAt, LocalDateTime endsAt) {
         checkNullOrBlank(title, "제목");
         checkNullOrBlank(content, "내용");
-
 
         this.title = title;
         this.content = content;
         this.tags = tags != null ? new ArrayList<>(tags) : new ArrayList<>();
-        this.images = images != null ? new ArrayList<>(images) : new ArrayList<>();
         this.locationName = locationName;
         this.locationAddress = locationAddress;
         this.locationLink = locationLink;
@@ -135,6 +135,10 @@ public class Event extends BaseEntity{
 
         return this;
     }
+    public void updateImages(List<String> images) {
+        this.images = images;
+    }
+
 
     // Convenience Methods for EventJoin
     public void addParticipant(User user, EventJoinStatus status) {
@@ -185,6 +189,9 @@ public class Event extends BaseEntity{
         }
         if (endsAt == null) {
             throw new IllegalArgumentException("행사 종료 일시 미입력");
+        }
+        if (startsAt.isAfter(endsAt)) {
+            throw new IllegalArgumentException("종료 일시가 시작 일시보다 빠를 수 없습니다");
         }
     }
 }

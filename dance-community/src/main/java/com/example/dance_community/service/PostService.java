@@ -90,33 +90,23 @@ public class PostService {
         }
     }
     private void handleImageUpdate(Post post, List<String> newImages, List<String> keepImages) {
-        // keepImages가 null이면 이미지 변경 안 함
         if (keepImages == null) {
-            System.out.println("📷 이미지 변경 없음 - keepImages가 null");
-
-            // 새 이미지만 추가
             if (newImages != null && !newImages.isEmpty()) {
                 List<String> currentImages = new ArrayList<>(post.getImages());
                 currentImages.addAll(newImages);
                 post.updateImages(currentImages);
-                System.out.println("📷 새 이미지만 추가: " + newImages.size() + "개");
             }
             return;
         }
 
-        // keepImages가 빈 리스트면 모든 이미지 삭제
         List<String> currentImages = post.getImages();
         List<String> finalImages = new ArrayList<>();
 
         if (keepImages.isEmpty()) {
-            // 모든 기존 이미지 삭제
-            System.out.println("🗑️ 모든 기존 이미지 삭제 요청");
             for (String imagePath : currentImages) {
                 fileStorageService.deleteFile(imagePath);
-                System.out.println("🗑️ 삭제: " + imagePath);
             }
         } else {
-            // 유지할 이미지만 남기고 나머지 삭제
             finalImages.addAll(keepImages);
 
             List<String> imagesToDelete = currentImages.stream()
@@ -125,21 +115,13 @@ public class PostService {
 
             for (String imagePath : imagesToDelete) {
                 fileStorageService.deleteFile(imagePath);
-                System.out.println("삭제: " + imagePath);
             }
-
-            System.out.println("유지: " + keepImages.size() + "개");
         }
 
-        // 새 이미지 추가
         if (newImages != null && !newImages.isEmpty()) {
             finalImages.addAll(newImages);
-            System.out.println("새 이미지 추가: " + newImages.size() + "개");
         }
-
-        // DB 업데이트
         post.updateImages(finalImages);
-        System.out.println("최종 이미지: " + finalImages.size() + "개");
     }
 
     @Transactional
