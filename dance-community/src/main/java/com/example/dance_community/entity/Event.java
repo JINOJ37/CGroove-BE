@@ -87,6 +87,15 @@ public class Event extends BaseEntity{
     @Column(nullable = false)
     private LocalDateTime endsAt;
 
+    @Column(nullable = false)
+    private Long likeCount;
+
+    @Column(nullable = false)
+    private Long viewCount;
+
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<EventLike> likes = new ArrayList<>();
+
     // CREATE
     @Builder
     private Event(User host, Scope scope, Club club, EventType type,
@@ -109,6 +118,8 @@ public class Event extends BaseEntity{
         this.capacity = capacity;
         this.startsAt = startsAt;
         this.endsAt = endsAt;
+        this.likeCount = 0L;
+        this.viewCount = 0L;
     }
 
     public Event setHost(User host) {
@@ -138,7 +149,17 @@ public class Event extends BaseEntity{
     public void updateImages(List<String> images) {
         this.images = images;
     }
-
+    public void incrementViewCount() {
+        this.viewCount++;
+    }
+    public void incrementLikeCount() {
+        this.likeCount++;
+    }
+    public void decrementLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
+    }
 
     // Convenience Methods for EventJoin
     public void addParticipant(User user, EventJoinStatus status) {

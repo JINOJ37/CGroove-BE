@@ -1,12 +1,14 @@
 package com.example.dance_community.controller;
 
 import com.example.dance_community.dto.ApiResponse;
+import com.example.dance_community.dto.like.PostLikeResponse;
 import com.example.dance_community.dto.post.PostCreateRequest;
 import com.example.dance_community.dto.post.PostResponse;
 import com.example.dance_community.dto.post.PostUpdateRequest;
 import com.example.dance_community.enums.ImageType;
 import com.example.dance_community.security.UserDetail;
 import com.example.dance_community.service.FileStorageService;
+import com.example.dance_community.service.PostLikeService;
 import com.example.dance_community.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +29,7 @@ import java.util.List;
 @Tag(name = "5_Post", description = "게시물 관련 API")
 public class PostController {
     private final PostService postService;
+    private final PostLikeService postLikeService;
     private final FileStorageService fileStorageService;
 
     @Operation(summary = "게시물 생성", description = "게시물을 새로 작성합니다.")
@@ -60,17 +63,19 @@ public class PostController {
     @Operation(summary = "게시물 조회", description = "게시물 id를 통해 정보를 불러옵니다.")
     @GetMapping("/{postId}")
     public ResponseEntity<ApiResponse<PostResponse>> getPost(
+            @AuthenticationPrincipal UserDetail userDetail,
             @PathVariable Long postId
     ) {
-        PostResponse postResponse = postService.getPost(postId);
+        PostResponse postResponse = postService.getPost(postId, userDetail.getUserId());
         return ResponseEntity.ok(new ApiResponse<>("게시물 조회 성공", postResponse));
     }
 
     @Operation(summary = "전체 게시물 조회", description = "전체 게시물의 정보를 불러옵니다.")
     @GetMapping
     public ResponseEntity<ApiResponse<List<PostResponse>>> getPosts(
+            @AuthenticationPrincipal UserDetail userDetail
     ) {
-        List<PostResponse> postResponses = postService.getPosts();
+        List<PostResponse> postResponses = postService.getPosts(userDetail.getUserId());
         return ResponseEntity.ok(new ApiResponse<>("게시글 전체 조회 성공", postResponses));
     }
 
@@ -109,5 +114,16 @@ public class PostController {
     ) {
         postService.deletePost(userDetail.getUserId(), postId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "게시물 좋아요", description = "게시물 '좋아요' 버튼을 누릅니다.")
+    @PostMapping("/{postId}/like")
+    public ResponseEntity<ApiResponse<PostLikeResponse>> toggleLike(
+            @AuthenticationPrincipal UserDetail userDetail,
+            @PathVariable Long postId
+    ) {
+        PostLikeResponse response = postLikeService.toggleLike(userDetail.getUserId(), postId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>("게시물 좋아요 성공", response));
     }
 }

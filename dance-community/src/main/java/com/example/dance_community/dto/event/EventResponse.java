@@ -20,10 +20,13 @@ public record EventResponse(
         Long capacity,
         java.time.LocalDateTime startsAt,
         java.time.LocalDateTime endsAt,
+        Long viewCount,
+        Long likeCount,
+        Boolean isLiked,
         java.time.LocalDateTime createdAt,
         java.time.LocalDateTime updatedAt
 ) {
-    public static EventResponse from(Event event) {
+    public static EventResponse from(Event event, Boolean isLiked) {
         return new EventResponse(
                 event.getEventId(),
                 event.getHost().getUserId(),
@@ -42,6 +45,9 @@ public record EventResponse(
                 event.getCapacity(),
                 event.getStartsAt(),
                 event.getEndsAt(),
+                event.getViewCount(),
+                event.getLikeCount(),
+                isLiked,
                 event.getCreatedAt(),
                 event.getUpdatedAt()
         );

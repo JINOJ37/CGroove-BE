@@ -11,6 +11,10 @@ import java.util.List;
 
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
+    @Modifying
+    @Query("UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.postId = :postId")
+    void updateViewCount(@Param("postId") Long postId);
+
     @Modifying()
     @Query("UPDATE Post p SET p.isDeleted = true WHERE p.author.userId = :userId")
     void softDeleteByUserId(@Param("userId") Long userId);

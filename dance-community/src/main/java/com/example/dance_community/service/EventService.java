@@ -5,15 +5,14 @@ import com.example.dance_community.dto.event.EventResponse;
 import com.example.dance_community.dto.event.EventUpdateRequest;
 import com.example.dance_community.entity.Club;
 import com.example.dance_community.entity.Event;
-import com.example.dance_community.entity.Post;
 import com.example.dance_community.entity.User;
 import com.example.dance_community.enums.EventJoinStatus;
 import com.example.dance_community.enums.EventType;
 import com.example.dance_community.enums.Scope;
-import com.example.dance_community.exception.AccessDeniedException;
 import com.example.dance_community.exception.InvalidRequestException;
 import com.example.dance_community.exception.NotFoundException;
 import com.example.dance_community.repository.EventJoinRepository;
+import com.example.dance_community.repository.EventLikeRepository;
 import com.example.dance_community.repository.EventRepository;
 import com.example.dance_community.repository.UserRepository;
 import jakarta.persistence.EntityManager;
@@ -32,6 +31,7 @@ public class EventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final EventJoinRepository eventJoinRepository;
+    private final EventLikeRepository eventLikeRepository;
     private final ClubAuthService clubAuthService;
     private final FileStorageService fileStorageService;
     private final EntityManager em;
@@ -64,15 +64,23 @@ public class EventService {
                 .endsAt(request.getEndsAt())
                 .build();
 
-        return EventResponse.from(eventRepository.save(event));
+        return EventResponse.from(eventRepository.save(event), false);
     }
 
-    public EventResponse getEvent(Long eventId) {
-        return EventResponse.from(getActiveEvent(eventId));
-    }
+    public EventResponse getEvent(Long eventId, Long userId) {
+        Event event = getActiveEvent(eventId);
 
-    public List<EventResponse> getEvents() {
-        return eventRepository.findAll().stream().map(EventResponse::from).toList();
+        eventRepository.updateViewCount(eventId);
+        boolean isLiked = userId != null && eventLikeRepository.existsByEventEventIdAndUserUserId(eventId, userId);
+        return EventResponse.from(getActiveEvent(eventId), isLiked);
+    }
+    public List<EventResponse> getEvents(Long userId) {
+        return eventRepository.findAll().stream()
+                .map(event -> {
+                            boolean isLiked = userId != null
+                                    && eventLikeRepository.existsByEventEventIdAndUserUserId(event.getEventId(), userId);
+                            return EventResponse.from(event, isLiked);
+                        }).toList();
     }
 
     @Transactional
@@ -88,8 +96,9 @@ public class EventService {
         );
 
         handleImageUpdate(event, request.getNewImagePaths(), request.getKeepImages());
+        boolean isLiked = eventLikeRepository.existsByEventEventIdAndUserUserId(eventId, userId);
 
-        return EventResponse.from(event);
+        return EventResponse.from(event, isLiked);
     }
 
     @Transactional

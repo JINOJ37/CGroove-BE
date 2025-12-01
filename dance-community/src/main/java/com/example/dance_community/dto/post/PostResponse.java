@@ -15,10 +15,13 @@ public record PostResponse(
         String content,
         List<String> tags,
         List<String> images,
+        Long viewCount,
+        Long likeCount,
+        Boolean isLiked,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
-    public static PostResponse from(Post post) {
+    public static PostResponse from(Post post, Boolean isLiked) {
         return new PostResponse(
                 post.getPostId(),
                 post.getAuthor().getUserId(),
@@ -30,6 +33,9 @@ public record PostResponse(
                 post.getContent(),
                 post.getTags(),
                 post.getImages(),
+                post.getViewCount(),
+                post.getLikeCount(),
+                isLiked,
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );

@@ -61,9 +61,19 @@ public class Post extends BaseEntity{
     @Column(name = "image")
     private List<String> images = new ArrayList<>();
 
+    @Column(nullable = false)
+    private Long likeCount;
+
+    @Column(nullable = false)
+    private Long viewCount;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostLike> likes = new ArrayList<>();
+
     // CREATE
     @Builder
-    private Post(User author, Scope scope, Club club, String title, String content, List<String> tags, List<String> images) {
+    private Post(User author, Scope scope, Club club,
+                 String title, String content, List<String> tags, List<String> images) {
         validatePost(author, scope, club, title, content);
 
         this.author = author;
@@ -73,6 +83,8 @@ public class Post extends BaseEntity{
         this.content = content;
         this.tags = tags == null ? new ArrayList<>() : new ArrayList<>(tags);
         this.images = images == null ? new ArrayList<>() : new ArrayList<>(images);
+        this.likeCount = 0L;
+        this.viewCount = 0L;
     }
 
     public Post setAuthor(User author) {
@@ -93,6 +105,17 @@ public class Post extends BaseEntity{
     }
     public void updateImages(List<String> images) {
         this.images = images;
+    }
+    public void incrementViewCount() {
+        this.viewCount++;
+    }
+    public void incrementLikeCount() {
+        this.likeCount++;
+    }
+    public void decrementLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
     }
 
     // Check Methods

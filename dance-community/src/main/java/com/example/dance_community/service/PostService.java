@@ -10,6 +10,7 @@ import com.example.dance_community.enums.Scope;
 import com.example.dance_community.exception.AccessDeniedException;
 import com.example.dance_community.exception.InvalidRequestException;
 import com.example.dance_community.exception.NotFoundException;
+import com.example.dance_community.repository.PostLikeRepository;
 import com.example.dance_community.repository.PostRepository;
 import com.example.dance_community.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final PostLikeRepository postLikeRepository;
     private final ClubAuthService clubAuthService;
     private final FileStorageService fileStorageService;
 
@@ -51,14 +53,27 @@ public class PostService {
                 .images(request.getImages())
                 .build();
 
-        return PostResponse.from(postRepository.save(post));
+        return PostResponse.from(postRepository.save(post), false);
     }
 
-    public PostResponse getPost(Long postId) {
-        return PostResponse.from(getActivePost(postId));
+    @Transactional
+    public PostResponse getPost(Long postId, Long userId) {
+        Post post = getActivePost(postId);
+
+        postRepository.updateViewCount(postId);
+        boolean isLiked = userId != null && postLikeRepository.existsByPostPostIdAndUserUserId(postId, userId);
+
+        return PostResponse.from(post, isLiked);
     }
-    public List<PostResponse> getPosts() {
-        return postRepository.findAll().stream().map(PostResponse::from).toList();
+    public List<PostResponse> getPosts(Long userId) {
+        return postRepository.findAll().stream()
+                .map(post -> {
+                    // TODO: 게시글이 많으면 N+1 문제 발생 가능 (추후 QueryDSL 등으로 최적화 권장)
+                    boolean isLiked = userId != null
+                            && postLikeRepository.existsByPostPostIdAndUserUserId(post.getPostId(), userId);
+                    return PostResponse.from(post, isLiked);
+                })
+                .toList();
     }
 
     @Transactional
@@ -69,8 +84,9 @@ public class PostService {
 
         post.updatePost(request.getTitle(), request.getContent(), request.getTags());
         handleImageUpdate(post, request.getNewImagePaths(), request.getKeepImages());
+        boolean isLiked = postLikeRepository.existsByPostPostIdAndUserUserId(postId, userId);
 
-        return PostResponse.from(post);
+        return PostResponse.from(post, isLiked);
     }
 
     @Transactional

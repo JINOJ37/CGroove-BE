@@ -4,8 +4,10 @@ import com.example.dance_community.dto.ApiResponse;
 import com.example.dance_community.dto.event.EventCreateRequest;
 import com.example.dance_community.dto.event.EventResponse;
 import com.example.dance_community.dto.event.EventUpdateRequest;
+import com.example.dance_community.dto.like.EventlikeResponse;
 import com.example.dance_community.enums.ImageType;
 import com.example.dance_community.security.UserDetail;
+import com.example.dance_community.service.EventLikeService;
 import com.example.dance_community.service.EventService;
 import com.example.dance_community.service.FileStorageService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,6 +31,7 @@ import java.util.List;
 @Tag(name = "6_Event", description = "행사 관련 API")
 public class EventController {
     private final EventService eventService;
+    private final EventLikeService eventLikeService;
     private final FileStorageService fileStorageService;
 
     @Operation(summary = "행사 생성", description = "행사를 새로 만듭니다.")
@@ -81,17 +84,19 @@ public class EventController {
     @Operation(summary = "행사 조회", description = "행사 id를 통해 정보를 불러옵니다.")
     @GetMapping("/{eventId}")
     public ResponseEntity<ApiResponse<EventResponse>> getEvent(
+            @AuthenticationPrincipal UserDetail userDetail,
             @PathVariable Long eventId
     ) {
-        EventResponse eventResponse = eventService.getEvent(eventId);
+        EventResponse eventResponse = eventService.getEvent(eventId, userDetail.getUserId());
         return ResponseEntity.ok(new ApiResponse<>("행사 조회 성공", eventResponse));
     }
 
     @Operation(summary = "전체 행사 조회", description = "전체 행사 정보를 불러옵니다.")
     @GetMapping
     public ResponseEntity<ApiResponse<List<EventResponse>>> getEvents(
+            @AuthenticationPrincipal UserDetail userDetail
     ) {
-        List<EventResponse> eventResponseList = eventService.getEvents();
+        List<EventResponse> eventResponseList = eventService.getEvents(userDetail.getUserId());
         return ResponseEntity.ok(new ApiResponse<>("행사 전체 조회 성공", eventResponseList));
     }
 
@@ -147,5 +152,16 @@ public class EventController {
     ) {
         eventService.deleteEvent(userDetail.getUserId(), eventId);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "행사 좋아요", description = "행사 '좋아요' 버튼을 누릅니다.")
+    @PostMapping("/{eventId}/like")
+    public ResponseEntity<ApiResponse<EventlikeResponse>> toggleLike(
+            @AuthenticationPrincipal UserDetail userDetail,
+            @PathVariable Long eventId
+    ) {
+        EventlikeResponse response = eventLikeService.toggleLike(userDetail.getUserId(), eventId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>("행사 좋아요 성공", response));
     }
 }
