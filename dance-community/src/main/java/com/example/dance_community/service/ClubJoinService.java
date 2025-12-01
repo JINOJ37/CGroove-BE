@@ -132,6 +132,7 @@ public class ClubJoinService {
         clubJoin.changeStatus(ClubJoinStatus.LEFT);
     }
 
+    @Transactional
     public void changeMemberRole(Long managerId, Long clubId, Long targetUserId, ClubRole newRole) {
         clubAuthService.validateLeaderAuthority(managerId, clubId);
 
