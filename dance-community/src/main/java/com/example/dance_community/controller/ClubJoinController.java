@@ -72,6 +72,15 @@ public class ClubJoinController {
         return ResponseEntity.ok(new ApiResponse<>("내 클럽 목록 조회 성공", myClubs));
     }
 
+    @Operation(summary = "내 클럽 목록 조회", description = "내가 가입한 클럽 목록을 조회합니다.(신청 중인 클럽 포함)")
+    @GetMapping("/my-all")
+    public ResponseEntity<ApiResponse<List<ClubJoinResponse>>> getMyAllClubs(
+            @AuthenticationPrincipal UserDetail userDetail
+    ) {
+        List<ClubJoinResponse> myClubs = clubJoinService.getMyAllClubs(userDetail.getUserId());
+        return ResponseEntity.ok(new ApiResponse<>("내 클럽 목록 조회 성공", myClubs));
+    }
+
     // 클럽 관리자용
     @Operation(summary = "대기 중인 신청 목록 조회", description = "대기 중인 신청 목록을 조회합니다.")
     @GetMapping("/{clubId}/applications")

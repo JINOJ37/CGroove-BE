@@ -82,6 +82,11 @@ public class ClubJoinService {
     }
 
     public List<ClubJoinResponse> getMyClubs(Long userId) {
+        List<ClubJoin> clubJoins = clubJoinRepository.findByUser_UserIdAndStatusIn(userId, List.of(ClubJoinStatus.ACTIVE));
+        return clubJoins.stream().map(ClubJoinResponse::from).toList();
+    }
+
+    public List<ClubJoinResponse> getMyAllClubs(Long userId) {
         List<ClubJoin> clubJoins = clubJoinRepository.findByUser_UserIdAndStatusIn(userId, List.of(ClubJoinStatus.ACTIVE, ClubJoinStatus.PENDING));
         return clubJoins.stream().map(ClubJoinResponse::from).toList();
     }
