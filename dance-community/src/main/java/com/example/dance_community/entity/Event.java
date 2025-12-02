@@ -5,6 +5,7 @@ import com.example.dance_community.enums.EventType;
 import com.example.dance_community.enums.Scope;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -80,6 +81,9 @@ public class Event extends BaseEntity{
     // 행사 참가자 목록
     @OneToMany(mappedBy = "event")
     private List<EventJoin> participants = new ArrayList<>();
+
+    @Formula("(SELECT count(*) FROM event_joins ej WHERE ej.event_id = event_id AND ej.status = 'CONFIRMED')")
+    private int participantCount;
 
     // 행사 일시 (시작, 종료 시간)
     @Column(nullable = false)

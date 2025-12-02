@@ -72,8 +72,7 @@ public class EventService {
     @Transactional
     public EventResponse getEvent(Long eventId, Long userId) {
         Event event = getActiveEvent(eventId);
-
-        eventRepository.updateViewCount(eventId);
+        event.incrementViewCount();
         boolean isLiked = userId != null && eventLikeRepository.existsByEventEventIdAndUserUserId(eventId, userId);
         return EventResponse.from(getActiveEvent(eventId), isLiked);
     }

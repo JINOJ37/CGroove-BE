@@ -1,8 +1,10 @@
 package com.example.dance_community.repository;
 
+import com.example.dance_community.entity.ClubJoin;
 import com.example.dance_community.entity.Event;
 import com.example.dance_community.entity.EventJoin;
 import com.example.dance_community.entity.User;
+import com.example.dance_community.enums.ClubJoinStatus;
 import com.example.dance_community.enums.EventJoinStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -15,7 +17,7 @@ import java.util.Optional;
 
 @Repository
 public interface EventJoinRepository extends JpaRepository<EventJoin, Long> {
-    List<EventJoin> findByEvent(Event event);
+    List<EventJoin> findByEvent_EventIdAndStatus(Long eventId, EventJoinStatus status);
 
     List<EventJoin> findByParticipant(User user);
 

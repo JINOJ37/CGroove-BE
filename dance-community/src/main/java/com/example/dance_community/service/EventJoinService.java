@@ -107,7 +107,7 @@ public class EventJoinService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("행사를 찾을 수 없습니다"));
 
-        return eventJoinRepository.findByEvent(event)
+        return eventJoinRepository.findByEvent_EventIdAndStatus(eventId, EventJoinStatus.CONFIRMED)
                 .stream().map(EventJoinResponse::from).toList();
     }
 
