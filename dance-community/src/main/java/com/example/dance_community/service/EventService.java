@@ -67,6 +67,7 @@ public class EventService {
         return EventResponse.from(eventRepository.save(event), false);
     }
 
+    @Transactional
     public EventResponse getEvent(Long eventId, Long userId) {
         Event event = getActiveEvent(eventId);
 

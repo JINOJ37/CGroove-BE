@@ -5,7 +5,8 @@ import com.example.dance_community.entity.Event;
 public record EventResponse(
         Long eventId,
         Long hostId,
-        String hostName,
+        String hostNickname,
+        String hostProfileImage,
         String scope,
         Long clubId,
         String clubName,
@@ -31,6 +32,7 @@ public record EventResponse(
                 event.getEventId(),
                 event.getHost().getUserId(),
                 event.getHost().getNickname(),
+                event.getHost().getProfileImage(),
                 event.getScope().name(),
                 event.getClub() != null ? event.getClub().getClubId() : null,
                 event.getClub() != null ? event.getClub().getClubName() : null,

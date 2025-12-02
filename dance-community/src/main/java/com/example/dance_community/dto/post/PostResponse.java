@@ -7,7 +7,8 @@ import java.util.List;
 public record PostResponse(
         Long postId,
         Long authorId,
-        String authorName,
+        String authorNickname,
+        String authorProfileImage,
         String scope,
         Long clubId,
         String clubName,
@@ -26,6 +27,7 @@ public record PostResponse(
                 post.getPostId(),
                 post.getAuthor().getUserId(),
                 post.getAuthor().getNickname(),
+                post.getAuthor().getProfileImage(),
                 post.getScope().name(),
                 post.getClub() != null ? post.getClub().getClubId() : null,
                 post.getClub() != null ? post.getClub().getClubName() : null,
