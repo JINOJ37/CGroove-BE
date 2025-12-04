@@ -17,9 +17,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PostLikeService {
+    private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
-    private final UserRepository userRepository;
 
     @Transactional
     public PostLikeResponse toggleLike(Long userId, Long postId) {

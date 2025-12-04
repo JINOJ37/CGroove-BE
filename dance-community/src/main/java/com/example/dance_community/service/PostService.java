@@ -101,8 +101,10 @@ public class PostService {
         Set<Long> likedPostIds = userId != null
                 ? postLikeRepository.findLikedPostIds(postIds, userId) : new HashSet<>();
 
+        Set<Long> finalLikedPostIds = likedPostIds;
+
         return posts.stream()
-                .map(post -> PostResponse.from(post, likedPostIds.contains(post.getPostId())))
+                .map(post -> PostResponse.from(post, finalLikedPostIds.contains(post.getPostId())))
                 .toList();
     }
 

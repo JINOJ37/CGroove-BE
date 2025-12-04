@@ -22,9 +22,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -43,15 +43,25 @@ public class EventService {
         User host = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
 
+        Scope scope;
+        try {
+            scope = Scope.valueOf(request.getScope().toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new InvalidRequestException("잘못된 공개 범위입니다. (GLOBAL, CLUB 중 선택)");
+        }
+
         Club club = null;
-        if (Scope.CLUB.toString().equals(request.getScope())) {
-            if (request.getClubId() == null) throw new InvalidRequestException("클럽 ID 필요");
-            club = clubAuthService.findByClubId(request.getClubId());
+        if (scope == Scope.CLUB) {
+            Long clubId = request.getClubId();
+            if (clubId == null) {
+                throw new InvalidRequestException("공개 범위가 CLUB일 경우 clubId가 필요합니다.");
+            }
+            club = clubAuthService.findByClubId(clubId);
         }
 
         Event event = Event.builder()
                 .host(host)
-                .scope(Scope.valueOf(request.getScope().toUpperCase()))
+                .scope(scope)
                 .club(club)
                 .type(EventType.valueOf(request.getType().toUpperCase()))
                 .title(request.getTitle())
@@ -72,27 +82,40 @@ public class EventService {
     @Transactional
     public EventResponse getEvent(Long eventId, Long userId) {
         Event event = getActiveEvent(eventId);
-        event.incrementViewCount();
+        eventRepository.updateViewCount(eventId);
+
         boolean isLiked = userId != null && eventLikeRepository.existsByEventEventIdAndUserUserId(eventId, userId);
-        return EventResponse.from(getActiveEvent(eventId), isLiked);
+
+        return EventResponse.from(event, isLiked);
     }
     public List<EventResponse> getEvents(Long userId) {
-        return eventRepository.findAll().stream()
-                .map(event -> {
-                            boolean isLiked = userId != null
-                                    && eventLikeRepository.existsByEventEventIdAndUserUserId(event.getEventId(), userId);
-                            return EventResponse.from(event, isLiked);
-                        }).toList();
+        List<Long> myClubIds = clubAuthService.findUserClubIds(userId);
+        List<Event> events = eventRepository.findAllEvents(myClubIds);
+        return convertToResponses(events, userId);
     }
     public List<EventResponse> getUpcomingEvents(Long userId) {
-        Pageable limitEight = PageRequest.of(0, 10);
+        List<Long> myClubIds = clubAuthService.findUserClubIds(userId);
+        Pageable pageable = PageRequest.of(0, 10);
 
-        return eventRepository.findUpcomingEvents(limitEight).stream()
-                .map(event -> {
-                    boolean isLiked = userId != null
-                            && eventLikeRepository.existsByEventEventIdAndUserUserId(event.getEventId(), userId);
-                    return EventResponse.from(event, isLiked);
-                }).toList();
+        List<Event> events = eventRepository.findUpcomingEvents(myClubIds, pageable);
+        return convertToResponses(events, userId);
+    }
+    private List<EventResponse> convertToResponses(List<Event> events, Long userId) {
+        if (events.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> likedEventIds = new HashSet<>();
+        if (userId != null) {
+            List<Long> eventIds = events.stream().map(Event::getEventId).toList();
+            likedEventIds = eventLikeRepository.findLikedEventIds(eventIds, userId);
+        }
+
+        Set<Long> finalLikedEventIds = likedEventIds;
+
+        return events.stream()
+                .map(event -> EventResponse.from(event, finalLikedEventIds.contains(event.getEventId())))
+                .toList();
     }
 
     @Transactional
@@ -107,7 +130,7 @@ public class EventService {
                 request.getStartsAt(), request.getEndsAt()
         );
 
-        handleImageUpdate(event, request.getNewImagePaths(), request.getKeepImages());
+        fileStorageService.processImageUpdate(event, request.getNewImagePaths(), request.getKeepImages());
         boolean isLiked = eventLikeRepository.existsByEventEventIdAndUserUserId(eventId, userId);
 
         return EventResponse.from(event, isLiked);
@@ -140,44 +163,9 @@ public class EventService {
             throw new InvalidRequestException("권한이 없습니다");
         }
     }
-    private void handleImageUpdate(Event event, List<String> newImages, List<String> keepImages) {
-        if (keepImages == null) {
-            if (newImages != null && !newImages.isEmpty()) {
-                List<String> currentImages = new ArrayList<>(event.getImages());
-                currentImages.addAll(newImages);
-                event.updateImages(currentImages);
-            }
-            return;
-        }
-
-        List<String> currentImages = event.getImages();
-        List<String> finalImages = new ArrayList<>();
-
-        if (keepImages.isEmpty()) {
-            for (String imagePath : currentImages) {
-                fileStorageService.deleteFile(imagePath);
-            }
-        } else {
-            finalImages.addAll(keepImages);
-
-            List<String> imagesToDelete = currentImages.stream()
-                    .filter(img -> !keepImages.contains(img))
-                    .collect(Collectors.toList());
-
-            for (String imagePath : imagesToDelete) {
-                fileStorageService.deleteFile(imagePath);
-            }
-        }
-
-        if (newImages != null && !newImages.isEmpty()) {
-            finalImages.addAll(newImages);
-        }
-
-        event.updateImages(finalImages);
-    }
 
     public void softDeleteByUserId(Long userId) {
         eventRepository.softDeleteByUserId(userId);
     }
-    public void softDeleteByClubId(Long clubId) { eventRepository.softDeleteByClubId(clubId);}
+    public void softDeleteByClubId(Long clubId) { eventRepository.softDeleteByClubId(clubId); }
 }
