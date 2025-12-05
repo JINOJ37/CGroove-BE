@@ -21,10 +21,8 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    private final long accessTokenExpirationMs = 1000L * 60 * 60;       // 액세스 토큰 유효기간 : 1시간
-    private final long refreshTokenExpirationMs = 1000L * 60 * 60 * 24 * 7; // 리프레시 토큰 유효기간 : 7일
-
     public String generateAccessToken(Long userId) {
+        long accessTokenExpirationMs = 1000L * 60 * 60; // 액세스 토큰 유효기간 : 1시간
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .claim("type", "ACCESS")
@@ -35,6 +33,7 @@ public class JwtUtil {
     }
 
     public String generateRefreshToken(Long userId) {
+        long refreshTokenExpirationMs = 1000L * 60 * 60 * 24 * 7; // 리프레시 토큰 유효기간 : 7일
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .claim("type", "REFRESH")

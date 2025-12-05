@@ -23,20 +23,6 @@ public class UserDetail implements UserDetails {
             Long userId,
             String email,
             String nickname,
-            String password
-    ) {
-        this.userId = userId;
-        this.email = email;
-        this.nickname = nickname;
-        this.profileImage = null;
-        this.password = password;
-        this.authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
-    }
-
-    public UserDetail(
-            Long userId,
-            String email,
-            String nickname,
             String profileImage,
             String password
     ) {
@@ -46,23 +32,6 @@ public class UserDetail implements UserDetails {
         this.profileImage = profileImage;
         this.password = password;
         this.authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
-    }
-
-    // 생성자 3: 권한 포함 (나중에 ADMIN 등 추가 시)
-    public UserDetail(
-            Long userId,
-            String email,
-            String nickname,
-            String profileImage,
-            String password,
-            List<GrantedAuthority> authorities
-    ) {
-        this.userId = userId;
-        this.email = email;
-        this.nickname = nickname;
-        this.profileImage = profileImage;
-        this.password = password;
-        this.authorities = authorities;
     }
 
     @Override
