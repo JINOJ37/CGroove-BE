@@ -10,7 +10,7 @@ public interface PostRepositoryCustom {
     List<Post> findAllPosts(List<Long> myClubIds);
 
     // [메인 페이지] 인기글 조회
-    List<Post> findHotPosts(List<Long> myClubIds, Pageable pageable);
+    List<Post> findHotPosts(Pageable pageable);
 
     // [메인 페이지] 내 동아리 소식 조회
     List<Post> findMyClubPosts(Long userId, Pageable pageable);

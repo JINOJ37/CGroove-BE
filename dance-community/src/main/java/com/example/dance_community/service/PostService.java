@@ -80,10 +80,9 @@ public class PostService {
         return convertToResponses(posts, userId);
     }
     public List<PostResponse> getHotPosts(Long userId) {
-        List<Long> myClubIds = clubAuthService.findUserClubIds(userId);
         Pageable pageable = PageRequest.of(0, 10);
 
-        List<Post> posts = postRepository.findHotPosts(myClubIds, pageable);
+        List<Post> posts = postRepository.findHotPosts(pageable);
         return convertToResponses(posts, userId);
     }
     public List<PostResponse> getMyClubPosts(Long userId) {

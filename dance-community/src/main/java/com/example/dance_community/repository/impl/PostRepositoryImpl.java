@@ -37,7 +37,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     }
 
     @Override
-    public List<Post> findHotPosts(List<Long> myClubIds, Pageable pageable) {
+    public List<Post> findHotPosts(Pageable pageable) {
         LocalDateTime oneWeekAgo = LocalDateTime.now().minusDays(14);
         return queryFactory
                 .selectFrom(post)
@@ -46,7 +46,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                 .where(
                         post.createdAt.gt(oneWeekAgo),
                         post.isDeleted.isFalse(),
-                        accessiblePostCondition(myClubIds)
+                        post.scope.eq(Scope.GLOBAL)
                 )
                 .orderBy(post.likeCount.desc())
                 .offset(pageable.getOffset())
