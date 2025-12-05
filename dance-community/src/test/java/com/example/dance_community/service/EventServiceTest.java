@@ -5,6 +5,7 @@ import com.example.dance_community.dto.event.EventResponse;
 import com.example.dance_community.dto.event.EventUpdateRequest;
 import com.example.dance_community.entity.Event;
 import com.example.dance_community.entity.User;
+import com.example.dance_community.enums.EventJoinStatus;
 import com.example.dance_community.enums.EventType;
 import com.example.dance_community.enums.Scope;
 import com.example.dance_community.exception.InvalidRequestException;
@@ -52,8 +53,6 @@ class EventServiceTest {
     @Mock
     private EntityManager entityManager;
 
-    // --- 1. 행사 생성 (createEvent) ---
-
     @Test
     @DisplayName("행사 생성 성공 - GLOBAL 범위")
     void createEvent_Success_Global() {
@@ -69,7 +68,6 @@ class EventServiceTest {
 
         given(userRepository.findById(userId)).willReturn(Optional.of(host));
 
-        // 저장될 객체 Mocking
         Event savedEvent = Event.builder()
                 .host(host)
                 .scope(Scope.GLOBAL)
@@ -119,8 +117,6 @@ class EventServiceTest {
         assertThrows(InvalidRequestException.class, () -> eventService.createEvent(userId, request));
     }
 
-    // --- 2. 행사 조회 (getEvent, getUpcomingEvents) ---
-
     @Test
     @DisplayName("행사 상세 조회 성공 - 조회수 증가 확인")
     void getEvent_Success() {
@@ -139,8 +135,6 @@ class EventServiceTest {
         // then
         assertThat(response.eventId()).isEqualTo(eventId);
         assertThat(response.isLiked()).isTrue();
-        // updateViewCount 호출 확인 (엔티티 메서드 or 레포지토리 메서드)
-        // 현재 코드에서는 eventRepository.updateViewCount(eventId)를 호출함
         verify(eventRepository, times(1)).updateViewCount(eventId);
     }
 
@@ -150,19 +144,13 @@ class EventServiceTest {
         // given
         Long userId = 1L;
         Long eventId = 100L;
-
-        // Event 객체 준비 (Host 필수)
         User host = User.builder().userId(2L).build();
         Event event = Event.builder().eventId(eventId).scope(Scope.GLOBAL).type(EventType.BATTLE).host(host).build();
 
         List<Long> myClubIds = List.of(10L);
         given(clubAuthService.findUserClubIds(userId)).willReturn(myClubIds);
-
-        // QueryDSL 메서드 Mocking
         given(eventRepository.findUpcomingEvents(eq(myClubIds), any()))
                 .willReturn(List.of(event));
-
-        // 좋아요 누른 상태
         given(eventLikeRepository.findLikedEventIds(any(), eq(userId)))
                 .willReturn(Set.of(eventId));
 
@@ -174,7 +162,32 @@ class EventServiceTest {
         assertThat(responses.getFirst().isLiked()).isTrue();
     }
 
-    // --- 3. 행사 수정 (updateEvent) ---
+    @Test
+    @DisplayName("전체 행사 조회 성공")
+    void getEvents_Success() {
+        // given
+        Long userId = 1L;
+        Event event1 = Event.builder().eventId(10L).host(User.builder().userId(2L).build())
+                .title("").content("").scope(Scope.GLOBAL).type(EventType.BATTLE).capacity(20L)
+                .startsAt(LocalDateTime.now()).endsAt(LocalDateTime.now().plusHours(1)).build();
+        Event event2 = Event.builder().eventId(20L).host(User.builder().userId(2L).build())
+                .title("").content("").scope(Scope.GLOBAL).type(EventType.BATTLE).capacity(20L)
+                .startsAt(LocalDateTime.now()).endsAt(LocalDateTime.now().plusHours(1)).build();
+
+        List<Long> myClubIds = List.of(100L);
+        given(clubAuthService.findUserClubIds(userId)).willReturn(myClubIds);
+        given(eventRepository.findAllEvents(myClubIds)).willReturn(List.of(event1, event2));
+        given(eventLikeRepository.findLikedEventIds(any(), eq(userId))).willReturn(Set.of(10L));
+
+        // when
+        List<EventResponse> responses = eventService.getEvents(userId);
+
+        // then
+        assertThat(responses).hasSize(2);
+        assertThat(responses.get(0).eventId()).isEqualTo(10L);
+        assertThat(responses.get(0).isLiked()).isTrue();
+        assertThat(responses.get(1).isLiked()).isFalse();
+    }
 
     @Test
     @DisplayName("행사 수정 성공")
@@ -183,21 +196,17 @@ class EventServiceTest {
         Long userId = 1L;
         Long eventId = 100L;
         User host = User.builder().userId(userId).build();
-
-        // Spy 객체 사용 (내부 메서드 호출 확인용) 또는 Mock
-        // 여기서는 단순 Mocking으로 진행
         Event realEvent = Event.builder()
                 .eventId(eventId)
                 .host(host)
-                .scope(Scope.GLOBAL)       // 필수
-                .type(EventType.WORKSHOP)  // 필수
+                .scope(Scope.GLOBAL)
+                .type(EventType.WORKSHOP)
                 .title("Old Title")
                 .content("Old Content")
                 .build();
 
         Event event = spy(realEvent);
 
-        // Host 정보 접근을 위해 Stubbing
         given(event.getHost()).willReturn(host);
         given(event.getEventId()).willReturn(eventId);
 
@@ -211,15 +220,34 @@ class EventServiceTest {
         eventService.updateEvent(userId, eventId, request);
 
         // then
-        // updateEvent 메서드가 호출되었는지 검증
         verify(event).updateEvent(
                 eq("New Title"), eq("New Content"), any(), any(), any(), any(), eq(100L), any(), any()
         );
-        // 이미지 처리 위임 확인
         verify(fileStorageService).processImageUpdate(eq(event), any(), any());
     }
 
-    // --- 4. 행사 삭제 (deleteEvent) ---
+    @Test
+    @DisplayName("행사 수정 실패 - 주최자가 아님")
+    void updateEvent_Fail_NotHost() {
+        // given
+        Long userId = 1L;
+        Long hostId = 2L;
+        Long eventId = 100L;
+
+        User host = User.builder().userId(hostId).build();
+        Event event = Event.builder().eventId(eventId).host(host).build();
+
+        given(eventRepository.findById(eventId)).willReturn(Optional.of(event));
+
+        EventUpdateRequest request = new EventUpdateRequest(
+                "Title", "Content", null, null, null, null, null, null, 100L, null, null
+        );
+
+        // when & then
+        assertThrows(InvalidRequestException.class, () ->
+                eventService.updateEvent(userId, eventId, request)
+        );
+    }
 
     @Test
     @DisplayName("행사 삭제 성공 - Soft Delete")
@@ -228,7 +256,6 @@ class EventServiceTest {
         Long userId = 1L;
         Long eventId = 100L;
         User host = User.builder().userId(userId).build();
-        // Event spy
         Event event = spy(Event.builder().eventId(eventId).host(host).build());
 
         given(eventRepository.findById(eventId)).willReturn(Optional.of(event));
@@ -237,7 +264,54 @@ class EventServiceTest {
         eventService.deleteEvent(userId, eventId);
 
         // then
-        verify(event).delete(); // 엔티티의 delete() 메서드 호출 확인 (isDeleted = true)
-        // EntityManager flush/clear는 단위 테스트에서 Mocking하기 까다로우므로 생략 가능
+        verify(event).delete();
+        verify(eventJoinRepository).softDeleteByEventId(eventId, EventJoinStatus.CANCELED);
+        verify(entityManager).flush();
+        verify(entityManager).clear();
+    }
+
+    @Test
+    @DisplayName("행사 삭제 실패 - 주최자가 아님")
+    void deleteEvent_Fail_NotHost() {
+        // given
+        Long userId = 1L;
+        Long hostId = 2L;
+        Long eventId = 100L;
+
+        User host = User.builder().userId(hostId).build();
+        Event event = Event.builder().eventId(eventId).host(host).build();
+
+        given(eventRepository.findById(eventId)).willReturn(Optional.of(event));
+
+        // when & then
+        assertThrows(InvalidRequestException.class, () ->
+                eventService.deleteEvent(userId, eventId)
+        );
+    }
+
+    @Test
+    @DisplayName("유저 탈퇴 시 주최한 행사 Soft Delete")
+    void softDeleteByUserId() {
+        // given
+        Long userId = 1L;
+
+        // when
+        eventService.softDeleteByUserId(userId);
+
+        // then
+        verify(eventRepository).softDeleteByUserId(userId);
+    }
+
+    @Test
+    @DisplayName("클럽 삭제 시 연관된 행사 Soft Delete")
+    void softDeleteByClubId() {
+        // given
+        Long clubId = 10L;
+
+        // when
+        eventService.softDeleteByClubId(clubId);
+
+        // then
+        verify(eventRepository).softDeleteByClubId(clubId);
     }
 }

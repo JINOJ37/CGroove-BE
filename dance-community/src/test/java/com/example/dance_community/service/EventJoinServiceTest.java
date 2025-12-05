@@ -7,6 +7,7 @@ import com.example.dance_community.entity.User;
 import com.example.dance_community.enums.EventJoinStatus;
 import com.example.dance_community.exception.ConflictException;
 import com.example.dance_community.exception.InvalidRequestException;
+import com.example.dance_community.exception.NotFoundException;
 import com.example.dance_community.repository.EventJoinRepository;
 import com.example.dance_community.repository.EventRepository;
 import com.example.dance_community.repository.UserRepository;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -40,8 +42,6 @@ class EventJoinServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    // --- 1. 행사 신청 (applyEvent) ---
-
     @Test
     @DisplayName("행사 신청 성공 - 신규 신청")
     void applyEvent_Success_New() {
@@ -51,16 +51,14 @@ class EventJoinServiceTest {
         User user = User.builder().userId(userId).build();
         Event event = Event.builder().eventId(eventId).capacity(50L).build();
 
-        // Mocking
         given(eventJoinRepository.findByParticipant_UserIdAndEvent_EventId(userId, eventId))
-                .willReturn(Optional.empty()); // 기존 내역 없음
+                .willReturn(Optional.empty());
         given(eventRepository.findWithLockByEventId(eventId))
                 .willReturn(Optional.of(event));
         given(eventJoinRepository.countByEvent_EventIdAndStatus(eventId, EventJoinStatus.CONFIRMED))
-                .willReturn(10L); // 현재 10명 (여유 있음)
+                .willReturn(10L);
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
-        // save 호출 시 객체 반환
         EventJoin savedJoin = EventJoin.builder().participant(user).event(event).status(EventJoinStatus.CONFIRMED).build();
         given(eventJoinRepository.save(any(EventJoin.class))).willReturn(savedJoin);
 
@@ -74,14 +72,13 @@ class EventJoinServiceTest {
 
     @Test
     @DisplayName("행사 신청 성공 - 취소했던 유저 재신청")
-    void applyEvent_Success_Rejoin() {
+    void applyEvent_Success_Canceled() {
         // given
         Long userId = 1L;
         Long eventId = 100L;
         User user = User.builder().userId(userId).build();
         Event event = Event.builder().eventId(eventId).capacity(50L).build();
 
-        // 취소 상태인 기존 내역 존재
         EventJoin existingJoin = EventJoin.builder().status(EventJoinStatus.CANCELED).event(event).participant(user).build();
 
         given(eventJoinRepository.findByParticipant_UserIdAndEvent_EventId(userId, eventId))
@@ -96,8 +93,35 @@ class EventJoinServiceTest {
 
         // then
         assertThat(response.status()).isEqualTo(EventJoinStatus.CONFIRMED.name());
-        assertThat(existingJoin.getStatus()).isEqualTo(EventJoinStatus.CONFIRMED); // 상태 변경 확인
-        verify(eventJoinRepository, times(0)).save(any(EventJoin.class)); // save 호출 안 함 (더티 체킹)
+        assertThat(existingJoin.getStatus()).isEqualTo(EventJoinStatus.CONFIRMED);
+        verify(eventJoinRepository, times(0)).save(any(EventJoin.class));
+    }
+
+    @Test
+    @DisplayName("행사 신청 성공 - 거절 당했던 유저 재신청")
+    void applyEvent_Success_Rejected() {
+        // given
+        Long userId = 1L;
+        Long eventId = 100L;
+        User user = User.builder().userId(userId).build();
+        Event event = Event.builder().eventId(eventId).capacity(50L).build();
+
+        EventJoin existingJoin = EventJoin.builder().status(EventJoinStatus.REJECTED).event(event).participant(user).build();
+
+        given(eventJoinRepository.findByParticipant_UserIdAndEvent_EventId(userId, eventId))
+                .willReturn(Optional.of(existingJoin));
+        given(eventRepository.findWithLockByEventId(eventId))
+                .willReturn(Optional.of(event));
+        given(eventJoinRepository.countByEvent_EventIdAndStatus(eventId, EventJoinStatus.CONFIRMED))
+                .willReturn(10L);
+
+        // when
+        EventJoinResponse response = eventJoinService.applyEvent(userId, eventId);
+
+        // then
+        assertThat(response.status()).isEqualTo(EventJoinStatus.CONFIRMED.name());
+        assertThat(existingJoin.getStatus()).isEqualTo(EventJoinStatus.CONFIRMED);
+        verify(eventJoinRepository, times(0)).save(any(EventJoin.class));
     }
 
     @Test
@@ -127,15 +151,12 @@ class EventJoinServiceTest {
                 .willReturn(Optional.empty());
         given(eventRepository.findWithLockByEventId(eventId))
                 .willReturn(Optional.of(event));
-        // 정원 50명인데 현재 50명
         given(eventJoinRepository.countByEvent_EventIdAndStatus(eventId, EventJoinStatus.CONFIRMED))
                 .willReturn(50L);
 
         // when & then
         assertThrows(ConflictException.class, () -> eventJoinService.applyEvent(userId, eventId));
     }
-
-    // --- 2. 신청 취소 (cancelEventJoin) ---
 
     @Test
     @DisplayName("신청 취소 성공")
@@ -167,7 +188,17 @@ class EventJoinServiceTest {
         assertThrows(InvalidRequestException.class, () -> eventJoinService.cancelEventJoin(1L, 100L));
     }
 
-    // --- 3. 참여 거절 (rejectParticipation) ---
+    @Test
+    @DisplayName("신청 취소 실패 - 이미 거절됨")
+    void cancelEventJoin_Fail_AlreadyRejected() {
+        // given
+        EventJoin join = EventJoin.builder().status(EventJoinStatus.REJECTED).build();
+        given(eventJoinRepository.findByParticipant_UserIdAndEvent_EventId(1L, 100L))
+                .willReturn(Optional.of(join));
+
+        // when & then
+        assertThrows(InvalidRequestException.class, () -> eventJoinService.cancelEventJoin(1L, 100L));
+    }
 
     @Test
     @DisplayName("참여 거절 성공")
@@ -178,7 +209,7 @@ class EventJoinServiceTest {
         Long participantId = 20L;
 
         User host = User.builder().userId(hostId).build();
-        Event event = Event.builder().eventId(eventId).host(host).build(); // 주최자 설정
+        Event event = Event.builder().eventId(eventId).host(host).build();
         EventJoin targetJoin = EventJoin.builder().status(EventJoinStatus.CONFIRMED).build();
 
         given(eventRepository.findById(eventId)).willReturn(Optional.of(event));
@@ -207,8 +238,6 @@ class EventJoinServiceTest {
                 eventJoinService.rejectParticipation(otherUserId, 100L, 20L));
     }
 
-    // --- 4. 조회 (getUserEvents) ---
-
     @Test
     @DisplayName("내 신청 목록 조회 - N+1 해결 검증용 Mocking")
     void getUserEvents_Success() {
@@ -216,8 +245,6 @@ class EventJoinServiceTest {
         Long userId = 1L;
         User user = User.builder().userId(userId).build();
 
-        // QueryDSL 메서드 Mocking
-        // 실제로는 Event, Host 정보가 채워진 EventJoin 리스트를 반환한다고 가정
         Event event = Event.builder().eventId(100L).host(User.builder().nickname("Host").build()).build();
         EventJoin join = EventJoin.builder().event(event).participant(user).status(EventJoinStatus.CONFIRMED).build();
 
@@ -256,5 +283,104 @@ class EventJoinServiceTest {
         // then
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().nickname()).isEqualTo("Dancer");
+    }
+
+    @Test
+    @DisplayName("신청 상태 조회 성공")
+    void getJoinStatus_Success() {
+        // given
+        Long userId = 1L;
+        Long eventId = 100L;
+        User user = User.builder().userId(userId).build();
+        Event event = Event.builder().eventId(eventId).build();
+
+        EventJoin join = EventJoin.builder()
+                .participant(user)
+                .event(event)
+                .status(EventJoinStatus.CONFIRMED)
+                .build();
+
+        given(eventJoinRepository.findByParticipant_UserIdAndEvent_EventId(userId, eventId))
+                .willReturn(Optional.of(join));
+
+        // when
+        EventJoinResponse response = eventJoinService.getJoinStatus(userId, eventId);
+
+        // then
+        assertThat(response.status()).isEqualTo("CONFIRMED");
+    }
+
+    @Test
+    @DisplayName("신청 상태 조회 실패 - 이력 없음")
+    void getJoinStatus_Fail_NotFound() {
+        // given
+        given(eventJoinRepository.findByParticipant_UserIdAndEvent_EventId(anyLong(), anyLong()))
+                .willReturn(Optional.empty());
+
+        // when & then
+        assertThrows(NotFoundException.class, () ->
+                eventJoinService.getJoinStatus(1L, 100L)
+        );
+    }
+
+    @Test
+    @DisplayName("참여 거절 실패 - 신청 상태가 CONFIRMED가 아님")
+    void rejectParticipation_Fail_NotConfirmed() {
+        // given
+        Long hostId = 10L;
+        Long eventId = 100L;
+        Long participantId = 20L;
+
+        User host = User.builder().userId(hostId).build();
+        Event event = Event.builder().eventId(eventId).host(host).build();
+
+        EventJoin targetJoin = EventJoin.builder().status(EventJoinStatus.CANCELED).build();
+
+        given(eventRepository.findById(eventId)).willReturn(Optional.of(event));
+        given(eventJoinRepository.findByParticipant_UserIdAndEvent_EventId(participantId, eventId))
+                .willReturn(Optional.of(targetJoin));
+
+        // when & then
+        assertThrows(InvalidRequestException.class, () ->
+                eventJoinService.rejectParticipation(hostId, eventId, participantId)
+        );
+    }
+
+    @Test
+    @DisplayName("행사 참여자 목록 조회 실패 - 행사 없음")
+    void getEventUsers_Fail_NotFound() {
+        // given
+        given(eventRepository.existsById(anyLong())).willReturn(false);
+
+        // when & then
+        assertThrows(NotFoundException.class, () ->
+                eventJoinService.getEventUsers(999L)
+        );
+    }
+
+    @Test
+    @DisplayName("유저 탈퇴 시 신청 내역 취소 처리")
+    void softDeleteByUserId() {
+        // given
+        Long userId = 1L;
+
+        // when
+        eventJoinService.softDeleteByUserId(userId);
+
+        // then
+        verify(eventJoinRepository).softDeleteByUserId(userId, EventJoinStatus.CANCELED);
+    }
+
+    @Test
+    @DisplayName("클럽 삭제 시 관련 행사 신청 내역 취소 처리")
+    void softDeleteByClubId() {
+        // given
+        Long clubId = 10L;
+
+        // when
+        eventJoinService.softDeleteByClubId(clubId);
+
+        // then
+        verify(eventJoinRepository).softDeleteByClubId(clubId, EventJoinStatus.CANCELED);
     }
 }

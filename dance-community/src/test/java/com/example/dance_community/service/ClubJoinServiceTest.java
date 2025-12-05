@@ -39,8 +39,6 @@ class ClubJoinServiceTest {
     @Mock
     private ClubAuthService clubAuthService;
 
-    // --- 1. 일반 사용자 기능 (신청/취소/탈퇴) ---
-
     @Test
     @DisplayName("클럽 가입 신청 성공 - 신규 신청")
     void applyToClub_Success_New() {
@@ -51,11 +49,10 @@ class ClubJoinServiceTest {
         Club club = Club.builder().clubId(clubId).build();
 
         given(clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId))
-                .willReturn(Optional.empty()); // 기존 내역 없음
+                .willReturn(Optional.empty());
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
         given(clubAuthService.findByClubId(clubId)).willReturn(club);
 
-        // save 호출 시 PENDING 상태의 객체 반환
         ClubJoin savedJoin = ClubJoin.builder().user(user).club(club).status(ClubJoinStatus.PENDING).role(ClubRole.MEMBER).build();
         given(clubJoinRepository.save(any(ClubJoin.class))).willReturn(savedJoin);
 
@@ -65,6 +62,72 @@ class ClubJoinServiceTest {
         // then
         assertThat(response.status()).isEqualTo(ClubJoinStatus.PENDING.name());
         verify(clubJoinRepository, times(1)).save(any(ClubJoin.class));
+    }
+
+    @Test
+    @DisplayName("클럽 가입 신청 성공 - 탈퇴 후 재가입")
+    void applyToClub_Success_Left() {
+        // given
+        Long userId = 1L;
+        Long clubId = 10L;
+        User user = User.builder().userId(userId).build();
+        Club club = Club.builder().clubId(clubId).build();
+        ClubJoin leftUser = ClubJoin.builder().status(ClubJoinStatus.LEFT).role(ClubRole.MEMBER).user(user).club(club).build();
+
+        given(clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId))
+                .willReturn(Optional.of(leftUser));
+
+        // when
+        ClubJoinResponse response = clubJoinService.applyToClub(userId, clubId);
+
+        // then
+        assertThat(response.status()).isEqualTo(ClubJoinStatus.PENDING.name());
+        assertThat(leftUser.getStatus()).isEqualTo(ClubJoinStatus.PENDING);
+        verify(clubJoinRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("클럽 가입 신청 성공 - 취소 당한 후 재가입")
+    void applyToClub_Success_Canceled() {
+        // given
+        Long userId = 1L;
+        Long clubId = 10L;
+        User user = User.builder().userId(userId).build();
+        Club club = Club.builder().clubId(clubId).build();
+        ClubJoin canceledUser = ClubJoin.builder().status(ClubJoinStatus.CANCELED).role(ClubRole.MEMBER).user(user).club(club).build();
+
+        given(clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId))
+                .willReturn(Optional.of(canceledUser));
+
+        // when
+        ClubJoinResponse response = clubJoinService.applyToClub(userId, clubId);
+
+        // then
+        assertThat(response.status()).isEqualTo(ClubJoinStatus.PENDING.name());
+        assertThat(canceledUser.getStatus()).isEqualTo(ClubJoinStatus.PENDING);
+        verify(clubJoinRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("클럽 가입 신청 성공 - 거절 당한 후 재가입")
+    void applyToClub_Success_Rejected() {
+        // given
+        Long userId = 1L;
+        Long clubId = 10L;
+        User user = User.builder().userId(userId).build();
+        Club club = Club.builder().clubId(clubId).build();
+        ClubJoin rejectedUser = ClubJoin.builder().status(ClubJoinStatus.REJECTED).role(ClubRole.MEMBER).user(user).club(club).build();
+
+        given(clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId))
+                .willReturn(Optional.of(rejectedUser));
+
+        // when
+        ClubJoinResponse response = clubJoinService.applyToClub(userId, clubId);
+
+        // then
+        assertThat(response.status()).isEqualTo(ClubJoinStatus.PENDING.name());
+        assertThat(rejectedUser.getStatus()).isEqualTo(ClubJoinStatus.PENDING);
+        verify(clubJoinRepository, never()).save(any());
     }
 
     @Test
@@ -80,30 +143,6 @@ class ClubJoinServiceTest {
 
         // when & then
         assertThrows(ConflictException.class, () -> clubJoinService.applyToClub(userId, clubId));
-    }
-
-    @Test
-    @DisplayName("클럽 가입 신청 성공 - 탈퇴 후 재가입")
-    void applyToClub_Success_Rejoin() {
-        // given
-        Long userId = 1L;
-        Long clubId = 10L;
-        // 이전에 탈퇴(LEFT)한 기록 있음
-        User user = User.builder().userId(userId).build();
-        Club club = Club.builder().clubId(clubId).build();
-
-        ClubJoin existingJoin = ClubJoin.builder().status(ClubJoinStatus.LEFT).role(ClubRole.MEMBER).user(user).club(club).build();
-
-        given(clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId))
-                .willReturn(Optional.of(existingJoin));
-
-        // when
-        ClubJoinResponse response = clubJoinService.applyToClub(userId, clubId);
-
-        // then
-        assertThat(response.status()).isEqualTo(ClubJoinStatus.PENDING.name());
-        assertThat(existingJoin.getStatus()).isEqualTo(ClubJoinStatus.PENDING); // 상태 변경 확인
-        verify(clubJoinRepository, never()).save(any()); // save 호출 안 함
     }
 
     @Test
@@ -139,14 +178,43 @@ class ClubJoinServiceTest {
     }
 
     @Test
-    @DisplayName("클럽 탈퇴 성공")
+    @DisplayName("신청 취소 실패 - 대기 상태가 아님")
+    void cancelApplication_Fail_NotPending() {
+        // given
+        Long userId = 1L;
+        Long clubId = 10L;
+        ClubJoin join = ClubJoin.builder().status(ClubJoinStatus.ACTIVE).build();
+
+        given(clubAuthService.findClubJoin(userId, clubId)).willReturn(join);
+
+        // when & then
+        assertThrows(InvalidRequestException.class, () -> clubJoinService.cancelApplication(userId, clubId));
+    }
+
+    @Test
+    @DisplayName("클럽 탈퇴 성공 - 일반 멤버")
     void leaveClub_Success() {
         // given
         Long userId = 1L;
         Long clubId = 10L;
-        // 일반 멤버는 탈퇴 가능
         ClubJoin join = ClubJoin.builder().status(ClubJoinStatus.ACTIVE).role(ClubRole.MEMBER).build();
 
+        given(clubAuthService.findClubJoin(userId, clubId)).willReturn(join);
+
+        // when
+        clubJoinService.leaveClub(userId, clubId);
+
+        // then
+        assertThat(join.getStatus()).isEqualTo(ClubJoinStatus.LEFT);
+    }
+
+    @Test
+    @DisplayName("클럽 탈퇴 성공 - 관리자")
+    void leaveClub_Success_Manager() {
+        // given
+        Long userId = 1L;
+        Long clubId = 10L;
+        ClubJoin join = ClubJoin.builder().status(ClubJoinStatus.ACTIVE).role(ClubRole.MANAGER).build();
         given(clubAuthService.findClubJoin(userId, clubId)).willReturn(join);
 
         // when
@@ -170,8 +238,6 @@ class ClubJoinServiceTest {
         assertThrows(InvalidRequestException.class, () -> clubJoinService.leaveClub(userId, clubId));
     }
 
-    // --- 2. 관리자 기능 (승인/거절/추방/권한변경) ---
-
     @Test
     @DisplayName("가입 승인 성공")
     void approveApplication_Success() {
@@ -181,7 +247,6 @@ class ClubJoinServiceTest {
         Long applicantId = 2L;
         ClubJoin applicantJoin = ClubJoin.builder().status(ClubJoinStatus.PENDING).build();
 
-        // 관리자 권한 체크는 통과했다고 가정 (Mock)
         doNothing().when(clubAuthService).validateClubAuthority(managerId, clubId);
         given(clubAuthService.findClubJoin(applicantId, clubId)).willReturn(applicantJoin);
 
@@ -218,7 +283,6 @@ class ClubJoinServiceTest {
         Long managerId = 1L;
         Long clubId = 10L;
         Long applicantId = 2L;
-        // 이미 활동 중인 멤버를 거절하려고 함
         ClubJoin applicantJoin = ClubJoin.builder().status(ClubJoinStatus.ACTIVE).build();
 
         doNothing().when(clubAuthService).validateClubAuthority(managerId, clubId);
@@ -254,11 +318,9 @@ class ClubJoinServiceTest {
         // given
         Long managerId = 1L;
         Long clubId = 10L;
-        Long targetId = 1L; // 본인
+        Long targetId = 1L;
 
         doNothing().when(clubAuthService).validateClubAuthority(managerId, clubId);
-        // findClubJoin 호출 전에 ID 검사에서 걸려야 함 (Service 로직 순서 확인)
-        // 현재 로직상 validate -> find -> ID체크 순서이므로 find도 Mocking 필요
         ClubJoin selfJoin = ClubJoin.builder().status(ClubJoinStatus.ACTIVE).role(ClubRole.MANAGER).build();
         given(clubAuthService.findClubJoin(targetId, clubId)).willReturn(selfJoin);
 
@@ -292,7 +354,6 @@ class ClubJoinServiceTest {
         // given
         Long userId = 1L;
         User user = User.builder().userId(userId).build();
-        // QueryDSL Mocking: Club 정보가 채워진 Join 객체 리스트 반환
         Club club = Club.builder().clubId(10L).clubName("Dance Team").build();
         ClubJoin join = ClubJoin.builder().user(user).club(club).role(ClubRole.LEADER).status(ClubJoinStatus.ACTIVE).build();
 
@@ -305,5 +366,135 @@ class ClubJoinServiceTest {
         // then
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().clubName()).isEqualTo("Dance Team");
+    }
+
+    @Test
+    @DisplayName("내 전체 클럽 이력 조회 성공 (활동중 + 대기중)")
+    void getMyAllClubs_Success() {
+        // given
+        Long userId = 1L;
+        User user = User.builder().userId(userId).build();
+        Club club = Club.builder().clubId(10L).clubName("Dance Team").build();
+        ClubJoin join = ClubJoin.builder().user(user).club(club).role(ClubRole.LEADER).status(ClubJoinStatus.PENDING).build();
+
+        given(clubJoinRepository.findMyClubJoins(userId, List.of(ClubJoinStatus.ACTIVE, ClubJoinStatus.PENDING)))
+                .willReturn(List.of(join));
+
+        // when
+        List<ClubJoinResponse> result = clubJoinService.getMyAllClubs(userId);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().status()).isEqualTo(ClubJoinStatus.PENDING.name());
+    }
+
+    @Test
+    @DisplayName("가입 상태 단건 조회 성공")
+    void getJoinStatus_Success() {
+        // given
+        Long userId = 1L;
+        Long clubId = 10L;
+        User user = User.builder().userId(userId).build();
+        Club club = Club.builder().clubId(10L).clubName("Dance Team").build();
+        ClubJoin join = ClubJoin.builder().user(user).club(club).role(ClubRole.LEADER).status(ClubJoinStatus.ACTIVE).build();
+
+        given(clubAuthService.findClubJoin(userId, clubId)).willReturn(join);
+
+        // when
+        ClubJoinResponse result = clubJoinService.getJoinStatus(userId, clubId);
+
+        // then
+        assertThat(result.status()).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    @DisplayName("활동 중인 멤버 목록 조회 성공")
+    void getActiveMembers_Success() {
+        // given
+        Long clubId = 10L;
+        ClubJoin memberJoin = ClubJoin.builder()
+                .user(User.builder().nickname("User1").build())
+                .club(Club.builder().clubId(clubId).build())
+                .role(ClubRole.MEMBER)
+                .status(ClubJoinStatus.ACTIVE) // 상태 필수
+                .build();
+
+        given(clubJoinRepository.findClubMembers(clubId, ClubJoinStatus.ACTIVE))
+                .willReturn(List.of(memberJoin));
+
+        // when
+        List<ClubJoinResponse> result = clubJoinService.getActiveMembers(clubId);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().nickname()).isEqualTo("User1");
+    }
+
+    @Test
+    @DisplayName("가입 신청자 목록 조회 성공 - 관리자 권한 확인")
+    void getPendingApplications_Success() {
+        // given
+        Long managerId = 1L;
+        Long clubId = 10L;
+        doNothing().when(clubAuthService).validateClubAuthority(managerId, clubId);
+
+        ClubJoin applicant = ClubJoin.builder()
+                .user(User.builder().nickname("Applicant").build())
+                .club(Club.builder().clubId(clubId).build())
+                .role(ClubRole.LEADER)
+                .status(ClubJoinStatus.PENDING)
+                .build();
+
+        given(clubJoinRepository.findClubMembers(clubId, ClubJoinStatus.PENDING))
+                .willReturn(List.of(applicant));
+
+        // when
+        List<ClubJoinResponse> result = clubJoinService.getPendingApplications(managerId, clubId);
+
+        // then
+        assertThat(result).hasSize(1);
+        verify(clubAuthService).validateClubAuthority(managerId, clubId);
+    }
+
+    @Test
+    @DisplayName("가입 신청자 목록 조회 실패 - 권한 없음")
+    void getPendingApplications_Fail_NoAuth() {
+        // given
+        Long userId = 1L;
+        Long clubId = 10L;
+
+        doThrow(new com.example.dance_community.exception.AuthException("권한 없음"))
+                .when(clubAuthService).validateClubAuthority(userId, clubId);
+
+        // when & then
+        assertThrows(com.example.dance_community.exception.AuthException.class, () ->
+                clubJoinService.getPendingApplications(userId, clubId)
+        );
+    }
+
+    @Test
+    @DisplayName("유저 탈퇴 시 관련 클럽 가입 정보 Soft Delete")
+    void softDeleteByUserId() {
+        // given
+        Long userId = 1L;
+
+        // when
+        clubJoinService.softDeleteByUserId(userId);
+
+        // then
+        verify(clubJoinRepository).softDeleteByUserId(userId, ClubJoinStatus.LEFT);
+    }
+
+    @Test
+    @DisplayName("클럽 삭제 시 관련 가입 정보 Soft Delete")
+    void softDeleteByClubId() {
+        // given
+        Long clubId = 10L;
+
+        // when
+        clubJoinService.softDeleteByClubId(clubId);
+
+        // then
+        verify(clubJoinRepository).softDeleteByClubId(clubId, ClubJoinStatus.CANCELED);
     }
 }

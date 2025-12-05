@@ -37,7 +37,6 @@ class AuthServiceTest {
     @Mock
     private HttpServletResponse response;
 
-    // --- 회원가입 ---
     @Test
     @DisplayName("회원가입 성공")
     void signup_Success() {
@@ -45,7 +44,6 @@ class AuthServiceTest {
         SignupRequest request = new SignupRequest("test@email.com", "pw", "nick", null);
         UserResponse userResponse = new UserResponse(1L, "test@email.com", "nick", null, null);
 
-        // userService.createUser가 호출되면 userResponse를 리턴해라
         given(userService.createUser(request.getEmail(), request.getPassword(), request.getNickname(), request.getProfileImage()))
                 .willReturn(userResponse);
 
@@ -57,7 +55,6 @@ class AuthServiceTest {
         verify(userService).createUser(any(), any(), any(), any());
     }
 
-    // --- 로그인 ---
     @Test
     @DisplayName("로그인 성공 - 토큰 발급 및 쿠키 설정")
     void login_Success() {
@@ -76,7 +73,6 @@ class AuthServiceTest {
 
         // then
         assertThat(result.accessToken()).isEqualTo("access-token");
-        // 리프레시 토큰 쿠키 설정 메서드가 호출되었는지 검증
         verify(cookieUtil).setRefreshTokenCookie(response, "refresh-token");
     }
 
@@ -94,7 +90,6 @@ class AuthServiceTest {
         assertThrows(AuthException.class, () -> authService.login(request, response));
     }
 
-    // --- 토큰 재발급 (Refresh) ---
     @Test
     @DisplayName("토큰 재발급 성공")
     void refresh_Success() {

@@ -9,7 +9,7 @@ import com.example.dance_community.entity.User;
 import com.example.dance_community.enums.Scope;
 import com.example.dance_community.exception.AccessDeniedException;
 import com.example.dance_community.exception.InvalidRequestException;
-import com.example.dance_community.repository.ClubJoinRepository;
+import com.example.dance_community.exception.NotFoundException;
 import com.example.dance_community.repository.PostLikeRepository;
 import com.example.dance_community.repository.PostRepository;
 import com.example.dance_community.repository.UserRepository;
@@ -48,10 +48,6 @@ class PostServiceTest {
     private ClubAuthService clubAuthService;
     @Mock
     private FileStorageService fileStorageService;
-    @Mock
-    private ClubJoinRepository clubJoinRepository; // getMyClubPosts 등에서 사용될 수 있음
-
-    // --- 1. 게시글 생성 (createPost) ---
 
     @Test
     @DisplayName("게시글 생성 성공 - GLOBAL 범위")
@@ -65,7 +61,6 @@ class PostServiceTest {
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
-        // 저장될 객체 Mocking
         Post savedPost = Post.builder()
                 .author(user).scope(Scope.GLOBAL).title("Title").content("Content").build();
         given(postRepository.save(any(Post.class))).willReturn(savedPost);
@@ -75,7 +70,7 @@ class PostServiceTest {
 
         // then
         assertThat(response.scope()).isEqualTo("GLOBAL");
-        verify(clubAuthService, never()).findByClubId(any()); // 클럽 조회 안 함
+        verify(clubAuthService, never()).findByClubId(any());
     }
 
     @Test
@@ -107,13 +102,29 @@ class PostServiceTest {
     }
 
     @Test
+    @DisplayName("게시글 생성 실패 - 잘못된 Scope 값")
+    void createPost_Fail_InvalidScope() {
+        // given
+        Long userId = 1L;
+        User user = User.builder().userId(userId).build();
+        PostCreateRequest request = new PostCreateRequest("INVALID_SCOPE", null, "T", "C", null, null);
+
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+        // when & then
+        assertThrows(InvalidRequestException.class, () ->
+                postService.createPost(userId, request)
+        );
+    }
+
+    @Test
     @DisplayName("게시글 생성 실패 - CLUB인데 clubId 누락")
     void createPost_Fail_NoClubId() {
         // given
         Long userId = 1L;
         User user = User.builder().userId(userId).build();
         PostCreateRequest request = new PostCreateRequest(
-                "CLUB", null, "Title", "Content", null, null // clubId null
+                "CLUB", null, "Title", "Content", null, null
         );
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
@@ -122,41 +133,38 @@ class PostServiceTest {
         assertThrows(InvalidRequestException.class, () -> postService.createPost(userId, request));
     }
 
-    // --- 2. 게시글 조회 (getHotPosts, getMyClubPosts) ---
-
     @Test
-    @DisplayName("Hot Groove 조회 성공 - 좋아요 여부 포함")
-    void getHotPosts_Success() {
+    @DisplayName("게시글 생성 실패 - 존재하지 않는 클럽 (CLUB Scope)")
+    void createPost_Fail_ClubNotFound() {
         // given
         Long userId = 1L;
-        Long postId = 100L;
+        Long clubId = 999L;
         User user = User.builder().userId(userId).build();
+        PostCreateRequest request = new PostCreateRequest("CLUB", clubId, "T", "C", null, null);
 
-        // Post 객체 (엔티티에 필요한 필드 채우기)
-        Post post = Post.builder()
-                .postId(postId) // ID 필수
-                .title("Hot Post")
-                .author(user)   // 작성자 필수 (DTO 변환 시 사용)
-                .scope(Scope.GLOBAL)
-                .likeCount(50L)
-                .build();
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(clubAuthService.findByClubId(clubId)).willThrow(new NotFoundException("클럽 없음"));
 
-        Pageable pageable = PageRequest.of(0, 10);
-        given(postRepository.findHotPosts(pageable)).willReturn(List.of(post));
-
-        // 좋아요 누른 상태라고 가정
-        given(postLikeRepository.findLikedPostIds(List.of(postId), userId)).willReturn(Set.of(postId));
-
-        // when
-        List<PostResponse> responses = postService.getHotPosts(userId);
-
-        // then
-        assertThat(responses).hasSize(1);
-        assertThat(responses.getFirst().postId()).isEqualTo(postId);
-        assertThat(responses.getFirst().isLiked()).isTrue(); // 좋아요 체크 확인
+        // when & then
+        assertThrows(NotFoundException.class, () ->
+                postService.createPost(userId, request)
+        );
     }
 
-    // --- 3. 게시글 수정 (updatePost) ---
+    @Test
+    @DisplayName("게시글 생성 실패 - 존재하지 않는 사용자")
+    void createPost_Fail_UserNotFound() {
+        // given
+        Long userId = 999L;
+        PostCreateRequest request = new PostCreateRequest("GLOBAL", null, "T", "C", null, null);
+
+        given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThrows(NotFoundException.class, () ->
+                postService.createPost(userId, request)
+        );
+    }
 
     @Test
     @DisplayName("게시글 수정 성공")
@@ -165,10 +173,7 @@ class PostServiceTest {
         Long userId = 1L;
         Long postId = 100L;
         User user = User.builder().userId(userId).build();
-
-        // 기존 게시글 (작성자가 본인)
         Post post = Post.builder().postId(postId).scope(Scope.GLOBAL).author(user).title("Old").content("Old").build();
-
         PostUpdateRequest request = new PostUpdateRequest("New", "New", null, null, null);
 
         given(postRepository.findById(postId)).willReturn(Optional.of(post));
@@ -178,7 +183,6 @@ class PostServiceTest {
 
         // then
         assertThat(response.title()).isEqualTo("New");
-        // 이미지 처리 메서드 호출 확인
         verify(fileStorageService, times(1)).processImageUpdate(any(Post.class), any(), any());
     }
 
@@ -190,7 +194,7 @@ class PostServiceTest {
         Long otherUserId = 2L;
         User otherUser = User.builder().userId(otherUserId).build();
 
-        Post post = Post.builder().postId(100L).author(otherUser).build(); // 작성자 다름
+        Post post = Post.builder().postId(100L).scope(Scope.GLOBAL).author(otherUser).build();
 
         given(postRepository.findById(100L)).willReturn(Optional.of(post));
 
@@ -200,7 +204,20 @@ class PostServiceTest {
         );
     }
 
-    // --- 4. 게시글 삭제 (deletePost) ---
+    @Test
+    @DisplayName("게시글 수정 실패 - 존재하지 않는 게시글")
+    void updatePost_Fail_NotFound() {
+        // given
+        Long postId = 999L;
+        PostUpdateRequest request = new PostUpdateRequest("T", "C", null, null, null);
+
+        given(postRepository.findById(postId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThrows(NotFoundException.class, () ->
+                postService.updatePost(postId, 1L, request)
+        );
+    }
 
     @Test
     @DisplayName("게시글 삭제 성공")
@@ -208,8 +225,6 @@ class PostServiceTest {
         // given
         Long userId = 1L;
         User user = User.builder().userId(userId).build();
-        // Post가 Mock 객체여야 delete() 호출 여부 검증 가능 (또는 Spy 사용)
-        // 여기서는 실제 객체의 delete 필드 변경을 확인하거나, void 메서드라 호출만 확인
         Post post = spy(Post.builder().postId(100L).author(user).build());
 
         given(postRepository.findById(100L)).willReturn(Optional.of(post));
@@ -218,6 +233,126 @@ class PostServiceTest {
         postService.deletePost(userId, 100L);
 
         // then
-        verify(post, times(1)).delete(); // Soft delete 메서드 호출 확인
+        verify(post, times(1)).delete();
+    }
+
+    @Test
+    @DisplayName("게시글 삭제 실패 - 작성자가 아님")
+    void deletePost_Fail_NotAuthor() {
+        // given
+        Long userId = 1L;
+        Long otherUserId = 99L;
+        User otherUser = User.builder().userId(otherUserId).build();
+        Post post = Post.builder().postId(100L).author(otherUser).build();
+
+        given(postRepository.findById(100L)).willReturn(Optional.of(post));
+
+        // when & then
+        assertThrows(AccessDeniedException.class, () ->
+                postService.deletePost(userId, 100L)
+        );
+    }
+
+    @Test
+    @DisplayName("게시글 삭제 실패 - 존재하지 않는 게시글")
+    void deletePost_Fail_NotFound() {
+        // given
+        Long postId = 999L;
+        given(postRepository.findById(postId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThrows(NotFoundException.class, () ->
+                postService.deletePost(1L, postId)
+        );
+    }
+
+    @Test
+    @DisplayName("게시글 단건 조회 성공 - 조회수 증가 확인")
+    void getPost_Success() {
+        // given
+        Long postId = 100L;
+        Long userId = 1L;
+        User author = User.builder().userId(2L).nickname("Writer").build();
+        Post post = Post.builder()
+                .postId(postId)
+                .author(author)
+                .title("Title")
+                .content("Content")
+                .scope(Scope.GLOBAL)
+                .build();
+
+        given(postRepository.findById(postId)).willReturn(Optional.of(post));
+        given(postLikeRepository.existsByPostPostIdAndUserUserId(postId, userId)).willReturn(false);
+
+        // when
+        PostResponse response = postService.getPost(postId, userId);
+
+        // then
+        assertThat(response.postId()).isEqualTo(postId);
+        assertThat(response.isLiked()).isFalse();
+        verify(postRepository).updateViewCount(postId);
+    }
+
+    @Test
+    @DisplayName("게시글 조회 실패 - 존재하지 않는 게시글")
+    void getPost_Fail_NotFound() {
+        // given
+        Long postId = 999L;
+        given(postRepository.findById(postId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThrows(NotFoundException.class, () ->
+                postService.getPost(postId, 1L)
+        );
+    }
+
+    @Test
+    @DisplayName("Hot Groove 조회 성공 - 좋아요 여부 포함")
+    void getHotPosts_Success() {
+        // given
+        Long userId = 1L;
+        Long postId = 100L;
+        User user = User.builder().userId(userId).build();
+        Post post = Post.builder()
+                .postId(postId)
+                .title("Hot Post")
+                .author(user)
+                .scope(Scope.GLOBAL)
+                .likeCount(50L)
+                .build();
+
+        Pageable pageable = PageRequest.of(0, 10);
+        given(postRepository.findHotPosts(pageable)).willReturn(List.of(post));
+        given(postLikeRepository.findLikedPostIds(List.of(postId), userId)).willReturn(Set.of(postId));
+
+        // when
+        List<PostResponse> responses = postService.getHotPosts(userId);
+
+        // then
+        assertThat(responses).hasSize(1);
+        assertThat(responses.getFirst().postId()).isEqualTo(postId);
+        assertThat(responses.getFirst().isLiked()).isTrue();
+    }
+
+    @Test
+    @DisplayName("내 클럽 소식 조회 성공")
+    void getMyClubPosts_Success() {
+        // given
+        Long userId = 1L;
+        Post post = Post.builder()
+                .postId(10L)
+                .author(User.builder().userId(2L).build())
+                .scope(Scope.CLUB)
+                .build();
+
+        given(postRepository.findMyClubPosts(eq(userId), any(Pageable.class)))
+                .willReturn(List.of(post));
+
+        // when
+        List<PostResponse> responses = postService.getMyClubPosts(userId);
+
+        // then
+        assertThat(responses).hasSize(1);
+        assertThat(responses.getFirst().postId()).isEqualTo(10L);
     }
 }

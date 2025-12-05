@@ -36,42 +36,35 @@ class PostLikeServiceTest {
     private PostLikeRepository postLikeRepository;
 
     @Test
-    @DisplayName("좋아요 추가 성공 (Toggle On)")
+    @DisplayName("좋아요 추가 성공")
     void toggleLike_Add() {
         // given
         Long userId = 1L;
         Long postId = 100L;
         User user = User.builder().userId(userId).build();
-        // Post에 likeCount 초기값 설정 필요 (Increment 로직 검증용이지만, Entity 로직이라 여기선 값 변화 확인 어려울 수 있음)
         Post post = Post.builder().postId(postId).likeCount(0L).build();
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
         given(postRepository.findById(postId)).willReturn(Optional.of(post));
-
-        // 기존 좋아요 없음
         given(postLikeRepository.findByPostAndUser(post, user)).willReturn(Optional.empty());
 
         // when
         PostLikeResponse response = postLikeService.toggleLike(userId, postId);
 
         // then
-        assertThat(response.isLiked()).isTrue(); // true여야 함
-        verify(postLikeRepository, times(1)).save(any(PostLike.class)); // 저장 호출됨
-        // Post 엔티티 내부 로직인 incrementLikeCount()는 여기서 검증하기 어려움 (통합 테스트 영역)
-        // 하지만 response.likeCount() 값은 증가된 값이어야 함
+        assertThat(response.isLiked()).isTrue();
+        verify(postLikeRepository, times(1)).save(any(PostLike.class));
         assertThat(response.likeCount()).isEqualTo(1L);
     }
 
     @Test
-    @DisplayName("좋아요 취소 성공 (Toggle Off)")
+    @DisplayName("좋아요 취소 성공")
     void toggleLike_Remove() {
         // given
         Long userId = 1L;
         Long postId = 100L;
         User user = User.builder().userId(userId).build();
-        Post post = Post.builder().postId(postId).likeCount(1L).build(); // 이미 1개
-
-        // 기존 좋아요 있음
+        Post post = Post.builder().postId(postId).likeCount(1L).build();
         PostLike existingLike = PostLike.builder().post(post).user(user).build();
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
@@ -82,8 +75,8 @@ class PostLikeServiceTest {
         PostLikeResponse response = postLikeService.toggleLike(userId, postId);
 
         // then
-        assertThat(response.isLiked()).isFalse(); // false여야 함
-        verify(postLikeRepository, times(1)).delete(existingLike); // 삭제 호출됨
-        assertThat(response.likeCount()).isEqualTo(0L); // 감소됨
+        assertThat(response.isLiked()).isFalse();
+        verify(postLikeRepository, times(1)).delete(existingLike);
+        assertThat(response.likeCount()).isEqualTo(0L);
     }
 }

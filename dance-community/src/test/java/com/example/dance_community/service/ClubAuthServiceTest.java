@@ -27,12 +27,27 @@ class ClubAuthServiceTest {
     private ClubJoinRepository clubJoinRepository;
 
     @Test
+    @DisplayName("관리자 권한 확인 성공 - 리더")
+    void validateClubAuthority_Success_Leader() {
+        // given
+        Long userId = 1L;
+        Long clubId = 10L;
+        ClubJoin join = ClubJoin.builder().role(ClubRole.LEADER).build();
+
+        given(clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId))
+                .willReturn(Optional.of(join));
+
+        // when & then
+        assertDoesNotThrow(() -> clubAuthService.validateClubAuthority(userId, clubId));
+    }
+
+    @Test
     @DisplayName("관리자 권한 확인 성공 - 매니저")
     void validateClubAuthority_Success_Manager() {
         // given
         Long userId = 1L;
         Long clubId = 10L;
-        ClubJoin join = ClubJoin.builder().role(ClubRole.MANAGER).build(); // hasManagementPermission == true
+        ClubJoin join = ClubJoin.builder().role(ClubRole.MANAGER).build();
 
         given(clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId))
                 .willReturn(Optional.of(join));
@@ -47,7 +62,7 @@ class ClubAuthServiceTest {
         // given
         Long userId = 1L;
         Long clubId = 10L;
-        ClubJoin join = ClubJoin.builder().role(ClubRole.MEMBER).build(); // hasManagementPermission == false
+        ClubJoin join = ClubJoin.builder().role(ClubRole.MEMBER).build();
 
         given(clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId))
                 .willReturn(Optional.of(join));
@@ -57,12 +72,42 @@ class ClubAuthServiceTest {
     }
 
     @Test
-    @DisplayName("리더 권한 확인 실패 - 매니저라도 안됨")
+    @DisplayName("리더 권한 확인 성공 - 리더")
+    void validateLeaderAuthority_Success_Leader() {
+        // given
+        Long userId = 1L;
+        Long clubId = 10L;
+        ClubJoin join = ClubJoin.builder().role(ClubRole.LEADER).build();
+
+        given(clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId))
+                .willReturn(Optional.of(join));
+
+        // when & then
+        assertDoesNotThrow(() -> clubAuthService.validateLeaderAuthority(userId, clubId));
+    }
+
+    @Test
+    @DisplayName("리더 권한 확인 실패 - 매니저")
     void validateLeaderAuthority_Fail_Manager() {
         // given
         Long userId = 1L;
         Long clubId = 10L;
-        ClubJoin join = ClubJoin.builder().role(ClubRole.MANAGER).build(); // 리더 아님
+        ClubJoin join = ClubJoin.builder().role(ClubRole.MANAGER).build();
+
+        given(clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId))
+                .willReturn(Optional.of(join));
+
+        // when & then
+        assertThrows(AuthException.class, () -> clubAuthService.validateLeaderAuthority(userId, clubId));
+    }
+
+    @Test
+    @DisplayName("리더 권한 확인 실패 - 일반 멤버")
+    void validateLeaderAuthority_Fail_Member() {
+        // given
+        Long userId = 1L;
+        Long clubId = 10L;
+        ClubJoin join = ClubJoin.builder().role(ClubRole.MEMBER).build();
 
         given(clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId))
                 .willReturn(Optional.of(join));
