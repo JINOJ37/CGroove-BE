@@ -98,10 +98,12 @@ public class Event extends BaseEntity implements ImageHolder{
     private LocalDateTime endsAt;
 
     @Column(nullable = false)
-    private Long likeCount;
+    @Builder.Default
+    private Long likeCount = 0L;
 
     @Column(nullable = false)
-    private Long viewCount;
+    @Builder.Default
+    private Long viewCount = 0L;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

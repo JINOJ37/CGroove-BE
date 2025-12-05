@@ -66,10 +66,12 @@ public class Post extends BaseEntity implements ImageHolder{
     private List<String> images = new ArrayList<>();
 
     @Column(nullable = false)
-    private Long likeCount;
+    @Builder.Default
+    private Long likeCount = 0L;
 
     @Column(nullable = false)
-    private Long viewCount;
+    @Builder.Default
+    private Long viewCount = 0L;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
