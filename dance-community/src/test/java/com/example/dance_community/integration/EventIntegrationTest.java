@@ -39,6 +39,7 @@ class EventIntegrationTest {
     @Test
     @DisplayName("통합 테스트: 행사 생성부터 DB 저장 확인까지")
     void createEvent_EndToEnd() throws Exception {
+        // given
         User savedUser = userRepository.save(User.builder()
                 .email("test@email.com")
                 .password("password")
@@ -46,21 +47,21 @@ class EventIntegrationTest {
                 .build());
 
         MockMultipartFile imageFile = new MockMultipartFile(
-                "images",          // 파라미터 이름 (컨트롤러 @RequestParam 이름과 일치해야 함)
-                "test.jpg",        // 파일명
-                "image/jpeg",      // 컨텐츠 타입
-                "dummy content".getBytes() // ★ 내용이 있어야 함!
+                "images",
+                "test.jpg",
+                "image/jpeg",
+                "dummy content".getBytes()
         );
 
         UserDetail userDetail = new UserDetail(
-                savedUser.getUserId(), // ★ 진짜 저장된 ID 사용
+                savedUser.getUserId(),
                 savedUser.getEmail(),
                 savedUser.getNickname(),
                 null,
                 savedUser.getPassword()
         );
 
-        // when: API 호출
+        // when
         mockMvc.perform(multipart("/events")
                         .file(imageFile)
                         .param("title", "Integration Event")
@@ -77,12 +78,10 @@ class EventIntegrationTest {
                 )
                 .andExpect(status().isCreated());
 
-        // then: DB 검증
+        // then
         List<Event> events = eventRepository.findAll();
         assertThat(events).hasSize(1);
         assertThat(events.getFirst().getTitle()).isEqualTo("Integration Event");
-
-        // 작성자가 제대로 들어갔는지도 확인 가능
         assertThat(events.getFirst().getHost().getUserId()).isEqualTo(savedUser.getUserId());
     }
 }
