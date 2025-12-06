@@ -8,7 +8,6 @@ import com.example.dance_community.entity.User;
 import com.example.dance_community.enums.EventJoinStatus;
 import com.example.dance_community.enums.EventType;
 import com.example.dance_community.enums.Scope;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,8 +20,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest // JPA 테스트 (H2 사용)
-@Import({QueryDslConfig.class, JpaConfig.class}) // ✅ QueryDSL, Auditing 설정 로드 필수!
+@DataJpaTest
+@Import({QueryDslConfig.class, JpaConfig.class})
 class EventJoinRepositoryTest {
 
     @Autowired
@@ -34,25 +33,19 @@ class EventJoinRepositoryTest {
     @Autowired
     private EventRepository eventRepository;
 
-    @Autowired
-    private EntityManager em;
-
     private User participant;
     private Event event1;
     private Event event2;
 
     @BeforeEach
     void setUp() {
-        // 1. 유저 생성
         User host = userRepository.save(new User("host@test.com", "pw", "HostUser", null));
         participant = userRepository.save(new User("parti@test.com", "pw", "Participant", null));
 
-        // 2. 행사 생성
         event1 = eventRepository.save(Event.builder()
                 .host(host).title("Event A").scope(Scope.GLOBAL).type(EventType.WORKSHOP).content("Content A")
                 .capacity(20L).startsAt(LocalDateTime.now().plusDays(1)).endsAt(LocalDateTime.now().plusDays(2))
                 .likeCount(10L).viewCount(10L).build());
-
         event2 = eventRepository.save(Event.builder()
                 .host(host).title("Event B").scope(Scope.GLOBAL).type(EventType.BATTLE).content("Content B")
                 .capacity(20L).startsAt(LocalDateTime.now().plusDays(2)).endsAt(LocalDateTime.now().plusDays(3))
@@ -93,7 +86,6 @@ class EventJoinRepositoryTest {
 
         // then
         assertThat(results).hasSize(2);
-        // Event 정보와 Host 정보가 잘 로딩되었는지 확인
         EventJoin firstJoin = results.getFirst();
         assertThat(firstJoin.getEvent()).isNotNull();
         assertThat(firstJoin.getEvent().getHost().getNickname()).isEqualTo("HostUser");
