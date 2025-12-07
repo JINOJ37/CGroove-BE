@@ -13,7 +13,7 @@
 
 ## 💡 프로젝트 소개
 
-대학 댄스 동아리 활동을 하면서 가장 불편했던 점은 **"흩어져 있는 정보"**와 **"비효율적인 운영"**이었습니다.
+대학 댄스 동아리 활동을 하면서 가장 불편했던 점은 **흩어져 있는 정보**와 **비효율적인 운영**이었습니다.
 행사 신청은 구글 폼으로, 공지는 단톡방으로, 홍보는 인스타그램으로 흩어져 있다 보니 참여율을 관리하기 힘들었고, 크루원 관리는 수기 명부에 의존해야 했습니다.
 
 이러한 비효율을 해결하고, **댄서들이 춤에만 집중할 수 있는 환경**을 만들고자 이 프로젝트를 시작했습니다.
@@ -27,6 +27,12 @@
 - **Spring Data JPA + QueryDSL**: 복잡한 검색 조건과 성능 최적화를 위한 Type-Safe 쿼리 작성
 - **MySQL, H2**: 프로덕션 및 테스트 데이터베이스
 - **JUnit5, Mockito**: 비즈니스 로직의 신뢰성 확보를 위한 테스트 코드 작성
+
+---
+
+## 📂 ERD (Entity Relationship Diagram)
+![dance-community-v2 (1).png](../../../Downloads/dance-community-v2%20%281%29.png)
+<img width="2030" height="1412" alt="dance-community-v2 (1)" src="https://github.com/user-attachments/assets/5133e3dc-e4a3-489e-856c-1ab14d4947b9" />
 
 ---
 
@@ -64,6 +70,8 @@
 ---
 
 ## 🧪 테스트 커버리지
+
+<img width="1111" height="223" alt="스크린샷 2025-12-07 오후 10 07 00" src="https://github.com/user-attachments/assets/738b2af1-abae-4daf-979d-14e532c6985e" />
 
 *전체 라인 커버리지: **88%** / 브랜치 커버리지: **68%***
 
@@ -105,6 +113,11 @@ git clone [https://github.com/JINOJ37/dance-community.git](https://github.com/JI
 ## 📡 주요 API
 
 > 전체 API 문서: [Swagger UI](http://localhost:8080/swagger-ui/index.html)
+
+---
+
+## 🎥 시연 영상 시나리오
+[![C.Groove 시연 영상](https://img.youtube.com/vi/tm8GrfF0A9Y/0.jpg)](https://www.youtube.com/watch?v=tm8GrfF0A9Y)
 
 ---
 
