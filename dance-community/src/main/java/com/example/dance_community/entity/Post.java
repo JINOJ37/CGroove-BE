@@ -77,6 +77,10 @@ public class Post extends BaseEntity implements ImageHolder{
     @Builder.Default
     private List<PostLike> likes = new ArrayList<>();
 
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Comment> comments = new ArrayList<>();
+
     // CREATE
     private Post(User author, Scope scope, Club club,
                  String title, String content, List<String> tags, List<String> images) {

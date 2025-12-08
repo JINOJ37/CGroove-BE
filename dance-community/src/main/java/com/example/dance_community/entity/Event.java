@@ -109,6 +109,10 @@ public class Event extends BaseEntity implements ImageHolder{
     @Builder.Default
     private List<EventLike> likes = new ArrayList<>();
 
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Comment> comments = new ArrayList<>();
+
     // CREATE
     private Event(User host, Scope scope, Club club, EventType type,
                   String title, String content, List<String> tags, List<String> images,
