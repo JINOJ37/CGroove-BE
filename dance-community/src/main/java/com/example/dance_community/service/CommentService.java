@@ -19,6 +19,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -58,24 +60,26 @@ public class CommentService {
         return CommentResponse.from(savedComment, userId);
     }
 
-    public Page<CommentResponse> getComments(Long postId, Long eventId, Long currentUserId, Pageable pageable) {
+    public List<CommentResponse> getComments(Long postId, Long eventId, Long currentUserId) {
         validateOneTargetOnly(postId, eventId);
 
-        Page<Comment> commentPage;
+        List<Comment> commentList;
 
         if (postId != null) {
             if (!postRepository.existsById(postId)) {
                 throw new NotFoundException("게시글을 찾을 수 없습니다.");
             }
-            commentPage = commentRepository.findByPost_PostId(postId, pageable);
+            commentList = commentRepository.findByPost_PostId(postId);
         } else {
             if (!eventRepository.existsById(eventId)) {
                 throw new NotFoundException("행사를 찾을 수 없습니다.");
             }
-            commentPage = commentRepository.findByEvent_EventId(eventId, pageable);
+            commentList = commentRepository.findByEvent_EventId(eventId);
         }
 
-        return commentPage.map(comment -> CommentResponse.from(comment, currentUserId));
+        return commentList.stream()
+                .map(comment -> CommentResponse.from(comment, currentUserId))
+                .toList();
     }
 
     @Transactional
