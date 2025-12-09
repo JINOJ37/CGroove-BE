@@ -41,6 +41,7 @@ public class SecurityConfig {
                                 "/auth/signup",
                                 "/uploads/**",
                                 "/swagger-ui/**",
+                                "/actuator/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
                         .anyRequest().authenticated() // 나머지는 인증 필요

@@ -4,8 +4,8 @@ import { check, sleep } from 'k6';
 // 1. 부하 시나리오 설정
 export const options = {
   stages: [
-    { duration: '10s', target: 10 }, // 10초 동안 사용자 10명까지 늘림
-    { duration: '20s', target: 10 }, // 20초 동안 10명 유지
+    { duration: '10s', target: 50 }, // 10초 동안 사용자 10명까지 늘림
+    { duration: '20s', target: 50 }, // 20초 동안 10명 유지
     { duration: '10s', target: 0 },  // 10초 동안 0명으로 줄임
   ],
   thresholds: {
@@ -13,7 +13,7 @@ export const options = {
   },
 };
 
-const BASE_URL = 'http://localhost:8082'; // ⚠️ 포트 8081 확인
+const BASE_URL = 'http://localhost:8080'; // ⚠️ 포트 8081 확인
 
 export default function () {
   // --- [A] 로그인 ---

@@ -63,6 +63,10 @@ dependencies {
 
     // H2 Database (테스트용)
     runtimeOnly 'com.h2database:h2'
+
+    // Actuator 및 Prometheus
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 }
 
 tasks.named('test') {
