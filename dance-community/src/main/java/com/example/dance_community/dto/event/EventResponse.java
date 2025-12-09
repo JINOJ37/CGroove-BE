@@ -25,6 +25,7 @@ public record EventResponse(
         Long viewCount,
         Long likeCount,
         Boolean isLiked,
+        Integer commentCount,
         java.time.LocalDateTime createdAt,
         java.time.LocalDateTime updatedAt
 ) {
@@ -52,6 +53,7 @@ public record EventResponse(
                 event.getViewCount(),
                 event.getLikeCount(),
                 isLiked,
+                event.getComments().size(),
                 event.getCreatedAt(),
                 event.getUpdatedAt()
         );

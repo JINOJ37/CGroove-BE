@@ -19,6 +19,7 @@ public record PostResponse(
         Long viewCount,
         Long likeCount,
         Boolean isLiked,
+        Integer commentCount,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -38,6 +39,7 @@ public record PostResponse(
                 post.getViewCount(),
                 post.getLikeCount(),
                 isLiked,
+                post.getComments().size(),
                 post.getCreatedAt(),
                 post.getUpdatedAt()
         );
