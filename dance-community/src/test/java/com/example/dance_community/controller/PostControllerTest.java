@@ -68,7 +68,7 @@ class PostControllerTest {
         return new PostResponse(
                 1L, 1L, "User", null, "GLOBAL", null, null,
                 "Title", "Content", List.of("tag"), List.of("img.jpg"),
-                0L, 0L, false, LocalDateTime.now(), LocalDateTime.now()
+                0L, 0L, false, 3, LocalDateTime.now(), LocalDateTime.now()
         );
     }
 

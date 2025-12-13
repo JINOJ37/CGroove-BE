@@ -69,7 +69,7 @@ class EventControllerTest {
                 "WORKSHOP", "Title", "Content", List.of("tag"), List.of("img.jpg"),
                 "Loc", "Addr", "Link", 50L, 0L,
                 LocalDateTime.now(), LocalDateTime.now().plusHours(2),
-                0L, 0L, false, LocalDateTime.now(), LocalDateTime.now()
+                0L, 0L, false, 3, LocalDateTime.now(), LocalDateTime.now()
         );
     }
 
