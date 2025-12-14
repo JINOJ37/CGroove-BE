@@ -26,3 +26,6 @@ logging:
 
 jwt:
   secret: thisIsATestSecretKeyForDanceCommunityProjectMustBeLongEnough
+
+cors:
+  allowed-origins: http://localhost:5501
