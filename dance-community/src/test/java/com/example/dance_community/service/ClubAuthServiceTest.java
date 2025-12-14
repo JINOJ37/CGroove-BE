@@ -1,9 +1,13 @@
 package com.example.dance_community.service;
 
+import com.example.dance_community.entity.Club;
 import com.example.dance_community.entity.ClubJoin;
+import com.example.dance_community.enums.ClubJoinStatus;
 import com.example.dance_community.enums.ClubRole;
 import com.example.dance_community.exception.AuthException;
+import com.example.dance_community.exception.NotFoundException;
 import com.example.dance_community.repository.ClubJoinRepository;
+import com.example.dance_community.repository.ClubRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,8 +15,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -25,6 +31,9 @@ class ClubAuthServiceTest {
 
     @Mock
     private ClubJoinRepository clubJoinRepository;
+
+    @Mock
+    private ClubRepository clubRepository;
 
     @Test
     @DisplayName("관리자 권한 확인 성공 - 리더")
@@ -114,5 +123,64 @@ class ClubAuthServiceTest {
 
         // when & then
         assertThrows(AuthException.class, () -> clubAuthService.validateLeaderAuthority(userId, clubId));
+    }
+
+    @Test
+    @DisplayName("클럽 조회 성공")
+    void findByClubId_Success() {
+        // given
+        Long clubId = 10L;
+        Club club = Club.builder().clubId(clubId).clubName("TestClub").build();
+
+        given(clubRepository.findById(clubId)).willReturn(Optional.of(club));
+
+        // when
+        Club result = clubAuthService.findByClubId(clubId);
+
+        // then
+        assertThat(result.getClubId()).isEqualTo(clubId);
+        assertThat(result.getClubName()).isEqualTo("TestClub");
+    }
+
+    @Test
+    @DisplayName("클럽 조회 실패 - 존재하지 않는 클럽")
+    void findByClubId_Fail_NotFound() {
+        // given
+        Long clubId = 999L;
+        given(clubRepository.findById(clubId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThrows(NotFoundException.class, () -> clubAuthService.findByClubId(clubId));
+    }
+
+    @Test
+    @DisplayName("가입 정보 조회 실패 - 가입 정보 없음")
+    void findClubJoin_Fail_NotFound() {
+        // given
+        Long userId = 1L;
+        Long clubId = 10L;
+        given(clubJoinRepository.findByUser_UserIdAndClub_ClubId(userId, clubId))
+                .willReturn(Optional.empty());
+
+        // when & then
+        assertThrows(NotFoundException.class, () -> clubAuthService.findClubJoin(userId, clubId));
+    }
+
+    @Test
+    @DisplayName("사용자 클럽 ID 목록 조회 성공")
+    void findUserClubIds_Success() {
+        // given
+        Long userId = 1L;
+        List<Long> clubIds = List.of(10L, 20L, 30L);
+
+        given(clubJoinRepository.findClubIdsByUserIdAndStatus(userId, ClubJoinStatus.ACTIVE))
+                .willReturn(clubIds);
+
+        // when
+        List<Long> result = clubAuthService.findUserClubIds(userId);
+
+        // then
+        assertThat(result).hasSize(3);
+        assertThat(result).containsExactly(10L, 20L, 30L);
     }
 }

@@ -126,4 +126,36 @@ class UserControllerTest {
 
         verify(userService).deleteUser(1L);
     }
+
+    @Test
+    @DisplayName("회원 정보 조회 성공")
+    @WithCustomMockUser
+    void getUser_Success() throws Exception {
+        // given
+        UserResponse response = new UserResponse(2L, "other@email.com", "OtherUser", "img.jpg", null);
+        given(userService.getUser(2L)).willReturn(response);
+
+        // when & then
+        mockMvc.perform(get("/users/{userId}", 2L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("회원 정보 조회 성공"))
+                .andExpect(jsonPath("$.data.userId").value(2L))
+                .andExpect(jsonPath("$.data.nickname").value("OtherUser"));
+    }
+
+    @Test
+    @DisplayName("프로필 이미지 삭제 성공")
+    @WithCustomMockUser(userId = 1L)
+    void deleteProfileImage_Success() throws Exception {
+        // given
+        UserResponse response = new UserResponse(1L, "email", "nickname", null, null);
+        given(userService.deleteProfileImage(1L)).willReturn(response);
+
+        // when & then
+        mockMvc.perform(delete("/users/profile-image")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("프로필 이미지 삭제 성공"))
+                .andExpect(jsonPath("$.data.profileImage").isEmpty());
+    }
 }

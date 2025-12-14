@@ -120,4 +120,69 @@ class ClubJoinControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("멤버 추방 성공"));
     }
+
+    @Test
+    @DisplayName("클럽 탈퇴 성공")
+    @WithCustomMockUser
+    void leaveClub_Success() throws Exception {
+        mockMvc.perform(delete("/clubs/{clubId}/leave", 10L)
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("클럽 탈퇴 성공"));
+    }
+
+    @Test
+    @DisplayName("내 클럽 목록 조회 성공")
+    @WithCustomMockUser
+    void getMyClubs_Success() throws Exception {
+        given(clubJoinService.getMyClubs(any())).willReturn(java.util.List.of(mockResponse));
+
+        mockMvc.perform(get("/clubs/my"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("내 클럽 목록 조회 성공"))
+                .andExpect(jsonPath("$.data[0].clubId").value(10L));
+    }
+
+    @Test
+    @DisplayName("내 클럽 목록 조회 성공 - 신청 중 포함")
+    @WithCustomMockUser
+    void getMyAllClubs_Success() throws Exception {
+        given(clubJoinService.getMyAllClubs(any())).willReturn(java.util.List.of(mockResponse));
+
+        mockMvc.perform(get("/clubs/my-all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("내 클럽 목록 조회 성공"));
+    }
+
+    @Test
+    @DisplayName("대기 중인 신청 목록 조회 성공")
+    @WithCustomMockUser
+    void getPendingApplications_Success() throws Exception {
+        given(clubJoinService.getPendingApplications(any(), eq(10L))).willReturn(java.util.List.of(mockResponse));
+
+        mockMvc.perform(get("/clubs/{clubId}/applications", 10L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("대기 중인 신청 목록 조회 성공"));
+    }
+
+    @Test
+    @DisplayName("가입 신청 거절 성공")
+    @WithCustomMockUser
+    void rejectApplication_Success() throws Exception {
+        mockMvc.perform(post("/clubs/{clubId}/applications/{applicantId}/reject", 10L, 2L)
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("가입 신청 거절 성공"));
+    }
+
+    @Test
+    @DisplayName("활동 중인 멤버 목록 조회 성공")
+    @WithCustomMockUser
+    void getActiveMembers_Success() throws Exception {
+        given(clubJoinService.getActiveMembers(eq(10L))).willReturn(java.util.List.of(mockResponse));
+
+        mockMvc.perform(get("/clubs/{clubId}/members", 10L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("조회 성공"));
+    }
 }
