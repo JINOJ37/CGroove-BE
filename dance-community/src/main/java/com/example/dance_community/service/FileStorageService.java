@@ -39,7 +39,7 @@ public class FileStorageService {
             Path uploadPath = Paths.get(
                     fileProperties.getBaseDir(),
                     type.getDirectory()
-            );
+            ).toAbsolutePath();
 
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
@@ -48,8 +48,7 @@ public class FileStorageService {
             Path filePath = uploadPath.resolve(filename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            return String.format("/%s/%s/%s",
-                    fileProperties.getBaseDir(),
+            return String.format("/uploads/%s/%s",
                     type.getDirectory(),
                     filename
             );
