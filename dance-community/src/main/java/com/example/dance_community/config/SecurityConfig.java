@@ -48,6 +48,7 @@ public class SecurityConfig {
                                 "/uploads/**",
                                 "/home/**",
                                 "/api/home/**",
+                                "/home/ec2-user/app/uploads/**",
                                 "/swagger-ui/**",
                                 "/actuator/**",
                                 "/v3/api-docs/**"
