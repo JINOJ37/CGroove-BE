@@ -32,6 +32,12 @@ public class JwtFilter extends OncePerRequestFilter {
             @NotNull HttpServletResponse response,
             @NotNull FilterChain filterChain
     ) throws ServletException, IOException {
+        String path = request.getRequestURI();
+
+        if (path.startsWith("/uploads/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         // OPTIONS 요청 바로 통과
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
