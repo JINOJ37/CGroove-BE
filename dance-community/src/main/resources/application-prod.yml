@@ -27,7 +27,7 @@ jwt:
   secret: ${JWT_SECRET}
 
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://cgroove.vercel.app}
 
 springdoc:
   swagger-ui:
