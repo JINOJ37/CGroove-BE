@@ -44,6 +44,7 @@ public class SecurityConfig {
                         .requestMatchers( // 인증 없이 접근 가능
                                 "/auth/login",
                                 "/auth/signup",
+                                "/api/uploads/**",
                                 "/uploads/**",
                                 "/swagger-ui/**",
                                 "/actuator/**",
