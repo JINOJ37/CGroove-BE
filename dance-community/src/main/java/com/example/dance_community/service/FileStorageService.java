@@ -1,9 +1,7 @@
 package com.example.dance_community.service;
 
 import com.example.dance_community.config.FileProperties;
-import com.example.dance_community.entity.Event;
 import com.example.dance_community.entity.ImageHolder;
-import com.example.dance_community.entity.Post;
 import com.example.dance_community.enums.ImageType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

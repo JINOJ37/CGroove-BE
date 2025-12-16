@@ -41,7 +41,7 @@ logging:
 
 file:
   upload:
-    base-dir: ${FILE_UPLOAD_BASE_DIR:"uploads"}
+    base-dir: ${FILE_UPLOAD_BASE_DIR:/home/ec2-user/app/uploads}
     user-dir: users
     club-dir: clubs
     post-dir: posts

@@ -13,12 +13,9 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 1. 정상 경로
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:/home/ec2-user/app/uploads/");
-
-        // 2. 꼬인 경로 (👇 이게 꼭 있어야 합니다!)
-        registry.addResourceHandler("/home/ec2-user/app/uploads/**")
-                .addResourceLocations("file:/home/ec2-user/app/uploads/");
+                .addResourceLocations("file:///home/ec2-user/app/uploads/")
+                .setCachePeriod(60 * 60 * 24 * 365) // 1년 캐시 설정 예시
+                .resourceChain(true); // 리소스 체인 활성화
     }
 }
