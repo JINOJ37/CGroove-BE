@@ -34,7 +34,7 @@ class FileStorageServiceTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(fileProperties.getBaseDir()).thenReturn(tempDir.toString());
+        lenient().when(fileProperties.getUploadDir()).thenReturn(tempDir.toString());
         fileStorageService = new FileStorageService(fileProperties);
     }
 
@@ -84,10 +84,12 @@ class FileStorageServiceTest {
     @Test
     @DisplayName("이미지 업데이트 - 기존 이미지 삭제 및 새 목록 반영")
     void processImageUpdate_Success() throws IOException {
-        // given
-        Path oldFile = tempDir.resolve("old.jpg");
+        // given - /uploads/posts/old.jpg 형식의 경로를 사용
+        Path postsDir = tempDir.resolve("posts");
+        Files.createDirectories(postsDir);
+        Path oldFile = postsDir.resolve("old.jpg");
         Files.createFile(oldFile);
-        String oldPath = oldFile.toAbsolutePath().toString();
+        String oldPath = "/uploads/posts/old.jpg";
         FakeEntity entity = new FakeEntity(List.of(oldPath));
 
         List<String> newImages = new ArrayList<>();
@@ -143,14 +145,17 @@ class FileStorageServiceTest {
     @Test
     @DisplayName("파일 삭제 성공")
     void deleteFile_Success() throws IOException {
-        // given
-        Path filePath = tempDir.resolve("delete_me.jpg");
+        // given - /uploads/users/delete_me.jpg 형식의 경로를 전달하면
+        // tempDir/users/delete_me.jpg 에서 파일을 삭제해야 함
+        Path usersDir = tempDir.resolve("users");
+        Files.createDirectories(usersDir);
+        Path filePath = usersDir.resolve("delete_me.jpg");
         Files.createFile(filePath);
 
         assertThat(Files.exists(filePath)).isTrue();
 
-        // when
-        fileStorageService.deleteFile(filePath.toAbsolutePath().toString());
+        // when - /uploads/users/delete_me.jpg 형식으로 호출
+        fileStorageService.deleteFile("/uploads/users/delete_me.jpg");
 
         // then
         assertThat(Files.exists(filePath)).isFalse();

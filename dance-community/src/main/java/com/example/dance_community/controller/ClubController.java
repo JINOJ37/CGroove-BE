@@ -4,11 +4,8 @@ import com.example.dance_community.dto.ApiResponse;
 import com.example.dance_community.dto.club.ClubCreateRequest;
 import com.example.dance_community.dto.club.ClubResponse;
 import com.example.dance_community.dto.club.ClubUpdateRequest;
-import com.example.dance_community.enums.ClubType;
-import com.example.dance_community.enums.ImageType;
 import com.example.dance_community.security.UserDetail;
 import com.example.dance_community.service.ClubService;
-import com.example.dance_community.service.FileStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +14,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -27,28 +23,14 @@ import java.util.List;
 @Tag(name = "3_Club", description = "클럽 관련 API")
 public class ClubController {
     private final ClubService clubService;
-    private final FileStorageService fileStorageService;
 
     @Operation(summary = "클럽 생성", description = "클럽을 새로 작성합니다.")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ClubResponse>> createClub(
             @AuthenticationPrincipal UserDetail userDetail,
-            @RequestParam("clubName") String clubName,
-            @RequestParam("intro") String intro,
-            @RequestParam("locationName") String locationName,
-            @RequestParam("description") String description,
-            @RequestParam("clubType") ClubType clubType,
-            @RequestParam("tags") List<String> tags,
-            @RequestParam(value = "clubImage", required = false) MultipartFile clubImage
+            @ModelAttribute ClubCreateRequest request
     ) {
-        String clubImagePath = clubImage != null && !clubImage.isEmpty()
-                ? fileStorageService.saveImage(clubImage, ImageType.CLUB) : null;
-
-        ClubCreateRequest clubCreateRequest = new ClubCreateRequest(
-                clubName, intro, description, locationName, clubType, clubImagePath, tags
-        );
-
-        ClubResponse clubResponse = clubService.createClub(userDetail.getUserId(), clubCreateRequest);
+        ClubResponse clubResponse = clubService.createClub(userDetail.getUserId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>("클럽 생성 성공", clubResponse));
     }
 
@@ -70,26 +52,13 @@ public class ClubController {
     }
 
     @Operation(summary = "내 클럽 수정", description = "사용자의 클럽을 수정합니다.")
-    @PatchMapping("/{clubId}")
+    @PatchMapping(value = "/{clubId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ClubResponse>> updateClub(
             @AuthenticationPrincipal UserDetail userDetail,
             @PathVariable Long clubId,
-            @RequestParam("clubName") String clubName,
-            @RequestParam("intro") String intro,
-            @RequestParam("locationName") String locationName,
-            @RequestParam("description") String description,
-            @RequestParam("clubType") ClubType clubType,
-            @RequestParam(value = "tags", required = false) List<String> tags,
-            @RequestParam(value = "clubImage", required = false) MultipartFile clubImage
+            @ModelAttribute ClubUpdateRequest request
     ) {
-        String clubImagePath = clubImage != null && !clubImage.isEmpty()
-                ? fileStorageService.saveImage(clubImage, ImageType.CLUB) : null;
-
-        ClubUpdateRequest clubUpdateRequest = new ClubUpdateRequest(
-                clubName, intro, description, locationName, clubType, clubImagePath, tags
-        );
-
-        ClubResponse clubResponse = clubService.updateClub(userDetail.getUserId(), clubId, clubUpdateRequest);
+        ClubResponse clubResponse = clubService.updateClub(userDetail.getUserId(), clubId, request);
         return ResponseEntity.ok(new ApiResponse<>("클럽 수정 성공", clubResponse));
     }
 

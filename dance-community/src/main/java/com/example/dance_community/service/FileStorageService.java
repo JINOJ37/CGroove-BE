@@ -35,9 +35,9 @@ public class FileStorageService {
             String filename = generateFileName(file.getOriginalFilename());
 
             Path uploadPath = Paths.get(
-                    fileProperties.getBaseDir(),
+                    fileProperties.getUploadDir(),
                     type.getDirectory()
-            ).toAbsolutePath();
+            );
 
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
@@ -62,18 +62,20 @@ public class FileStorageService {
         }
 
         try {
-            Path path = Paths.get(filePath);
-
-            if (Files.exists(path)) {
-                Files.delete(path);
-                return;
+            // filePath가 "/uploads/users/xxx.jpg" 형태인 경우
+            // 실제 파일 경로: {uploadDir}/users/xxx.jpg
+            Path actualPath;
+            if (filePath.startsWith("/uploads/")) {
+                String relativePath = filePath.substring("/uploads/".length());
+                actualPath = Paths.get(fileProperties.getUploadDir(), relativePath);
+            } else if (filePath.startsWith("/")) {
+                actualPath = Paths.get(fileProperties.getUploadDir(), filePath.substring(1));
+            } else {
+                actualPath = Paths.get(fileProperties.getUploadDir(), filePath);
             }
 
-            if (filePath.startsWith("/")) {
-                Path relativePath = Paths.get(filePath.substring(1));
-                if (Files.exists(relativePath)) {
-                    Files.delete(relativePath);
-                }
+            if (Files.exists(actualPath)) {
+                Files.delete(actualPath);
             }
 
         } catch (IOException e) {

@@ -1,5 +1,7 @@
 package com.example.dance_community.controller;
 
+import com.example.dance_community.config.FileProperties;
+import com.example.dance_community.config.WebConfig;
 import com.example.dance_community.dto.club.ClubCreateRequest;
 import com.example.dance_community.dto.club.ClubResponse;
 import com.example.dance_community.dto.club.ClubUpdateRequest;
@@ -38,7 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(
         controllers = ClubController.class,
         excludeFilters = {
-                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtFilter.class)
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtFilter.class),
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class)
         }
 )
 @AutoConfigureMockMvc(addFilters = false)
@@ -58,6 +61,9 @@ class ClubControllerTest {
 
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+
+    @MockitoBean
+    private FileProperties fileProperties;
 
     private ClubResponse createMockResponse() {
         return new ClubResponse(

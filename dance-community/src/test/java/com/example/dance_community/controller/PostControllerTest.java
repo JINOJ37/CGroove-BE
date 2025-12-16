@@ -1,5 +1,7 @@
 package com.example.dance_community.controller;
 
+import com.example.dance_community.config.FileProperties;
+import com.example.dance_community.config.WebConfig;
 import com.example.dance_community.dto.like.PostLikeResponse;
 import com.example.dance_community.dto.post.PostCreateRequest;
 import com.example.dance_community.dto.post.PostResponse;
@@ -39,7 +41,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(
         controllers = PostController.class,
         excludeFilters = {
-                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtFilter.class)
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtFilter.class),
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class)
         }
 )
 @AutoConfigureMockMvc(addFilters = false)
@@ -62,6 +65,9 @@ class PostControllerTest {
 
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+
+    @MockitoBean
+    private FileProperties fileProperties;
 
     // 테스트용 더미 응답 생성
     private PostResponse createMockResponse() {

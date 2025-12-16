@@ -25,7 +25,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -60,9 +60,15 @@ class ClubServiceTest {
         // given
         Long userId = 1L;
         User user = User.builder().userId(userId).build();
-        ClubCreateRequest request = new ClubCreateRequest(
-                "Dance Crew", "Intro", "Desc", "Seoul", ClubType.CREW, "img.jpg", List.of("hiphop")
-        );
+        ClubCreateRequest request = ClubCreateRequest.builder()
+                .clubName("Dance Crew")
+                .intro("Intro")
+                .description("Desc")
+                .locationName("Seoul")
+                .clubType(ClubType.CREW)
+                .clubImage(null)
+                .tags(List.of("hiphop"))
+                .build();
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
@@ -102,9 +108,15 @@ class ClubServiceTest {
                 .clubImage("old.jpg")
                 .build());
 
-        ClubUpdateRequest request = new ClubUpdateRequest(
-                "New Name", "New Intro", "Desc", "Loc", ClubType.CLUB, "new.jpg", List.of("tag")
-        );
+        ClubUpdateRequest request = ClubUpdateRequest.builder()
+                .clubName("New Name")
+                .intro("New Intro")
+                .description("Desc")
+                .locationName("Loc")
+                .clubType(ClubType.CLUB)
+                .clubImage(null)
+                .tags(List.of("tag"))
+                .build();
 
         doNothing().when(clubAuthService).validateClubAuthority(userId, clubId);
         given(clubAuthService.findByClubId(clubId)).willReturn(club);
@@ -114,9 +126,9 @@ class ClubServiceTest {
         clubService.updateClub(userId, clubId, request);
 
         // then
-        verify(fileStorageService).deleteFile("old.jpg");
+        verify(fileStorageService, never()).deleteFile(anyString());
         verify(club).updateClub(
-                eq("New Name"), any(), any(), any(), any(), eq("new.jpg"), any()
+                eq("New Name"), any(), any(), any(), any(), eq("old.jpg"), any()
         );
     }
 
@@ -126,9 +138,15 @@ class ClubServiceTest {
         // given
         Long userId = 99L;
         Long clubId = 10L;
-        ClubUpdateRequest request = new ClubUpdateRequest(
-                "Name", "Intro", "Desc", "Loc", ClubType.CLUB, null, null
-        );
+        ClubUpdateRequest request = ClubUpdateRequest.builder()
+                .clubName("Name")
+                .intro("Intro")
+                .description("Desc")
+                .locationName("Loc")
+                .clubType(ClubType.CLUB)
+                .clubImage(null)
+                .tags(null)
+                .build();
 
         doThrow(new AuthException("권한 없음")).when(clubAuthService).validateClubAuthority(userId, clubId);
 

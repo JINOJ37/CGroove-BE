@@ -1,5 +1,7 @@
 package com.example.dance_community.controller;
 
+import com.example.dance_community.config.FileProperties;
+import com.example.dance_community.config.WebConfig;
 import com.example.dance_community.dto.user.PasswordUpdateRequest;
 import com.example.dance_community.dto.user.UserResponse;
 import com.example.dance_community.dto.user.UserUpdateRequest;
@@ -35,7 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(
         controllers = UserController.class,
         excludeFilters = {
-                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtFilter.class)
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtFilter.class),
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class)
         }
 )
 @AutoConfigureMockMvc(addFilters = false)
@@ -58,6 +61,9 @@ class UserControllerTest {
 
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+
+    @MockitoBean
+    private FileProperties fileProperties;
 
     @Test
     @DisplayName("내 정보 조회 성공")

@@ -1,5 +1,7 @@
 package com.example.dance_community.controller;
 
+import com.example.dance_community.config.FileProperties;
+import com.example.dance_community.config.WebConfig;
 import com.example.dance_community.dto.comment.CommentRequest;
 import com.example.dance_community.dto.comment.CommentResponse;
 import com.example.dance_community.security.JwtFilter;
@@ -34,7 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(
         controllers = CommentController.class,
         excludeFilters = {
-                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtFilter.class)
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtFilter.class),
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class)
         }
 )
 @AutoConfigureMockMvc(addFilters = false)
@@ -54,6 +57,9 @@ class CommentControllerTest {
 
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+
+    @MockitoBean
+    private FileProperties fileProperties;
 
     private CommentResponse createMockResponse() {
         return new CommentResponse(

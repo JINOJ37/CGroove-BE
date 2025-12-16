@@ -1,5 +1,7 @@
 package com.example.dance_community.controller;
 
+import com.example.dance_community.config.FileProperties;
+import com.example.dance_community.config.WebConfig;
 import com.example.dance_community.dto.auth.AuthResponse;
 import com.example.dance_community.dto.auth.LoginRequest;
 import com.example.dance_community.dto.auth.SignupRequest;
@@ -39,7 +41,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(
         controllers = AuthController.class,
         excludeFilters = {
-                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtFilter.class)
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtFilter.class),
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class)
         }
 )
 @AutoConfigureMockMvc(addFilters = false)
@@ -62,6 +65,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+
+    @MockitoBean
+    private FileProperties fileProperties;
 
     @Test
     @DisplayName("회원가입 성공")

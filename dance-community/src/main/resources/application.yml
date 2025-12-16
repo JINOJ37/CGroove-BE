@@ -15,7 +15,7 @@ springdoc:
 
 spring:
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
+    active: ${SPRING_PROFILES_ACTIVE:local}
 
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/dance_community}
@@ -44,7 +44,9 @@ logging:
 
 file:
   upload:
-    base-dir: ${FILE_UPLOAD_BASE_DIR:/home/ec2-user/app/uploads}
+    # 로컬: 상대 경로 (프로젝트 루트/uploads)
+    # prod: application-prod.yml에서 절대 경로로 오버라이드
+    base-dir: ${FILE_UPLOAD_BASE_DIR:uploads}
     user-dir: users
     club-dir: clubs
     post-dir: posts

@@ -1,5 +1,7 @@
 package com.example.dance_community.controller;
 
+import com.example.dance_community.config.FileProperties;
+import com.example.dance_community.config.WebConfig;
 import com.example.dance_community.dto.eventJoin.EventJoinResponse;
 import com.example.dance_community.security.JwtFilter;
 import com.example.dance_community.security.WithCustomMockUser;
@@ -30,10 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(
         controllers = EventJoinController.class,
         excludeFilters = {
-                @ComponentScan.Filter(
-                        type = FilterType.ASSIGNABLE_TYPE,
-                        classes = JwtFilter.class
-                )
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtFilter.class),
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class)
         }
 )
 @AutoConfigureMockMvc(addFilters = false) // Security 필터 비활성화
@@ -44,6 +44,9 @@ class EventJoinControllerTest {
 
     @MockitoBean
     private EventJoinService eventJoinService;
+
+    @MockitoBean
+    private FileProperties fileProperties;
 
     private EventJoinResponse mockResponse;
 

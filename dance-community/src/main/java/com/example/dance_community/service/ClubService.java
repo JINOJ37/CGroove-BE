@@ -7,6 +7,7 @@ import com.example.dance_community.entity.Club;
 import com.example.dance_community.entity.User;
 import com.example.dance_community.enums.ClubJoinStatus;
 import com.example.dance_community.enums.ClubRole;
+import com.example.dance_community.enums.ImageType;
 import com.example.dance_community.exception.NotFoundException;
 import com.example.dance_community.repository.ClubRepository;
 import com.example.dance_community.repository.UserRepository;
@@ -14,6 +15,7 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -36,13 +38,19 @@ public class ClubService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
 
+        String clubImagePath = null;
+        MultipartFile clubImage = request.getClubImage();
+        if (clubImage != null && !clubImage.isEmpty()) {
+            clubImagePath = fileStorageService.saveImage(clubImage, ImageType.CLUB);
+        }
+
         Club club = Club.builder()
                 .clubName(request.getClubName())
                 .intro(request.getIntro())
                 .description(request.getDescription())
                 .locationName(request.getLocationName())
                 .clubType(request.getClubType())
-                .clubImage(request.getClubImage())
+                .clubImage(clubImagePath)
                 .tags(request.getTags())
                 .build();
 
@@ -63,16 +71,19 @@ public class ClubService {
         Club club = clubAuthService.findByClubId(clubId);
         String currentClubImage = club.getClubImage();
 
-        if (request.getClubImage() != null) {
+        String newClubImagePath = currentClubImage;
+        MultipartFile clubImageFile = request.getClubImage();
+        if (clubImageFile != null && !clubImageFile.isEmpty()) {
             if (currentClubImage != null) {
                 fileStorageService.deleteFile(currentClubImage);
             }
+            newClubImagePath = fileStorageService.saveImage(clubImageFile, ImageType.CLUB);
         }
 
         club.updateClub(
                 request.getClubName(), request.getIntro(), request.getDescription(),
                 request.getLocationName(), request.getClubType(),
-                request.getClubImage() == null ? club.getClubImage() : request.getClubImage(), request.getTags()
+                newClubImagePath, request.getTags()
         );
 
         return ClubResponse.from(clubRepository.save(club));

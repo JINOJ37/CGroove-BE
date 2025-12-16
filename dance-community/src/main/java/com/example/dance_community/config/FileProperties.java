@@ -5,6 +5,8 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Paths;
+
 @Getter
 @Setter
 @Component
@@ -15,4 +17,8 @@ public class FileProperties {
     private String clubDir = "clubs";
     private String postDir = "posts";
     private String eventDir = "events";
+
+    public String getUploadDir() {
+        return Paths.get(baseDir).toAbsolutePath().toString();
+    }
 }
