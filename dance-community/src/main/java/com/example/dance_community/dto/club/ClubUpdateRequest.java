@@ -11,6 +11,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 public class ClubUpdateRequest {
+
     @NotBlank(message = "클럽 이름 미입력")
     private String clubName;
 
@@ -24,4 +25,5 @@ public class ClubUpdateRequest {
     private String locationName;
     private List<String> tags;
     private MultipartFile clubImage;
+
 }

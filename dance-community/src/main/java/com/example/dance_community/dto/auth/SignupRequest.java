@@ -2,9 +2,12 @@ package com.example.dance_community.dto.auth;
 
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
+@Builder
 @AllArgsConstructor
 public class SignupRequest {
     @Email(message = "이메일 형식 오류")
@@ -18,5 +21,5 @@ public class SignupRequest {
     @NotBlank(message = "이름 미입력")
     String nickname;
 
-    String profileImage;
+    MultipartFile profileImage;
 }

@@ -25,4 +25,5 @@ public class ClubCreateRequest {
     private String locationName;
     private List<String> tags;
     private MultipartFile clubImage;
+
 }

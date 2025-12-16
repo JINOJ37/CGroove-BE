@@ -2,9 +2,12 @@ package com.example.dance_community.dto.auth;
 
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@Builder
 @AllArgsConstructor
 public class LoginRequest{
     @Email(message = "이메일 형식 오류")

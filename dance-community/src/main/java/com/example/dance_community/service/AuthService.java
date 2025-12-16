@@ -3,6 +3,7 @@ package com.example.dance_community.service;
 import com.example.dance_community.dto.auth.*;
 import com.example.dance_community.dto.user.UserResponse;
 import com.example.dance_community.entity.User;
+import com.example.dance_community.enums.ImageType;
 import com.example.dance_community.exception.AuthException;
 import com.example.dance_community.security.CookieUtil;
 import com.example.dance_community.security.JwtUtil;
@@ -10,21 +11,27 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
     private final UserService userService;
+    private final FileStorageService fileStorageService;
     private final CookieUtil cookieUtil;
     private final JwtUtil jwtUtil;
 
     @Transactional
     public AuthResponse signup(SignupRequest request){
+        MultipartFile profileImage = request.getProfileImage();
+        String profileImagePath = profileImage != null && !profileImage.isEmpty()
+                ? fileStorageService.saveImage(profileImage, ImageType.PROFILE) : null;
+
         UserResponse userResponse = userService.createUser(
                 request.getEmail(),
                 request.getPassword(),
                 request.getNickname(),
-                request.getProfileImage()
+                profileImagePath
         );
 
         return new AuthResponse(userResponse, "");
