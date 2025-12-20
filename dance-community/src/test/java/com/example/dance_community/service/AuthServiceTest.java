@@ -31,6 +31,8 @@ class AuthServiceTest {
     @Mock
     private UserService userService;
     @Mock
+    private FileStorageService fileStorageService;
+    @Mock
     private CookieUtil cookieUtil;
     @Mock
     private JwtUtil jwtUtil;
@@ -44,7 +46,7 @@ class AuthServiceTest {
         SignupRequest request = new SignupRequest("test@email.com", "pw", "nick", null);
         UserResponse userResponse = new UserResponse(1L, "test@email.com", "nick", null, null);
 
-        given(userService.createUser(request.getEmail(), request.getPassword(), request.getNickname(), request.getProfileImage()))
+        given(userService.createUser(request.getEmail(), request.getPassword(), request.getNickname(), null))
                 .willReturn(userResponse);
 
         // when

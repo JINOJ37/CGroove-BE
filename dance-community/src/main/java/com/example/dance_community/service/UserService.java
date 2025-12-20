@@ -12,7 +12,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import org.springframework.web.multipart.MultipartFile;
+import com.example.dance_community.enums.ImageType;
 
 @Service
 @RequiredArgsConstructor
@@ -28,10 +29,10 @@ public class UserService {
 
     @Transactional
     public UserResponse createUser(String email, String password, String nickname, String profileImage) {
-        if(this.existsByEmail(email)) {
+        if (this.existsByEmail(email)) {
             throw new ConflictException("이미 사용 중인 이메일입니다");
         }
-        if(this.existsByNickname(nickname)) {
+        if (this.existsByNickname(nickname)) {
             throw new ConflictException("이미 사용 중인 닉네임입니다");
         }
 
@@ -54,8 +55,12 @@ public class UserService {
         validateNickname(request.getNickname(), userId);
         User user = this.findByUserId(userId);
         String currentProfileImage = user.getProfileImage();
+        String newProfileImage = currentProfileImage;
 
-        if (request.getProfileImage() != null) {
+        MultipartFile imageFile = request.getProfileImage();
+        if (imageFile != null && !imageFile.isEmpty()) {
+            newProfileImage = fileStorageService.saveImage(imageFile, ImageType.PROFILE);
+
             if (currentProfileImage != null) {
                 fileStorageService.deleteFile(currentProfileImage);
             }
@@ -63,8 +68,7 @@ public class UserService {
 
         user.updateUser(
                 request.getNickname(),
-                request.getProfileImage() == null ? user.getProfileImage() : request.getProfileImage()
-        );
+                newProfileImage);
 
         return UserResponse.from(userRepository.save(user));
     }
@@ -74,8 +78,7 @@ public class UserService {
         User user = this.findByUserId(userId);
 
         user.updatePassword(
-                passwordEncoder.encode(request.getPassword())
-        );
+                passwordEncoder.encode(request.getPassword()));
 
         User savedUser = userRepository.save(user);
         return UserResponse.from(savedUser);
@@ -115,20 +118,25 @@ public class UserService {
     public boolean matchesPassword(User user, String rawPassword) {
         return passwordEncoder.matches(rawPassword, user.getPassword());
     }
+
     public User findByUserId(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("등록되지 않은 사용자"));
     }
+
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("등록되지 않은 사용자"));
     }
+
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
     }
+
     public boolean existsByNickname(String nickname) {
         return userRepository.existsByNickname(nickname);
     }
+
     public void validateNickname(String nickname, Long userId) {
         if (nickname == null || nickname.trim().isEmpty()) {
             return;

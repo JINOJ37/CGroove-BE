@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 
@@ -86,9 +87,7 @@ class UserServiceTest {
         given(userRepository.existsByEmail("test@example.com")).willReturn(true);
 
         // when & then
-        assertThrows(ConflictException.class, () ->
-                userService.createUser("test@example.com", "pw", "nick", null)
-        );
+        assertThrows(ConflictException.class, () -> userService.createUser("test@example.com", "pw", "nick", null));
     }
 
     @Test
@@ -102,9 +101,7 @@ class UserServiceTest {
         given(userRepository.existsByNickname(nickname)).willReturn(true);
 
         // when & then
-        assertThrows(ConflictException.class, () ->
-                userService.createUser(email, "pw", nickname, null)
-        );
+        assertThrows(ConflictException.class, () -> userService.createUser(email, "pw", nickname, null));
     }
 
     @Test
@@ -118,11 +115,14 @@ class UserServiceTest {
                 .profileImage("old.jpg")
                 .build());
 
-        UserUpdateRequest request = new UserUpdateRequest("NewNick", "new.jpg");
+        MultipartFile mockFile = mock(MultipartFile.class);
+        given(mockFile.isEmpty()).willReturn(false);
+        UserUpdateRequest request = new UserUpdateRequest("NewNick", mockFile);
 
         given(userRepository.existsByNicknameAndUserIdNot("NewNick", userId)).willReturn(false);
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
         given(userRepository.save(any(User.class))).willReturn(user);
+        given(fileStorageService.saveImage(any(), any())).willReturn("new.jpg");
 
         // when
         UserResponse response = userService.updateUser(userId, request);

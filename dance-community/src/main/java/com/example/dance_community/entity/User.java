@@ -18,7 +18,7 @@ import java.util.List;
 @Table(name = "users")
 @SQLRestriction("is_deleted = false")
 @SQLDelete(sql = "UPDATE users SET is_deleted = true WHERE user_id = ?")
-public class User extends BaseEntity{
+public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
@@ -65,7 +65,7 @@ public class User extends BaseEntity{
 
     // UPDATE
     public User updateUser(String nickname, String profileImage) {
-        if (nickname == null && nickname.trim().isEmpty()) {
+        if (nickname == null || nickname.trim().isEmpty()) {
             throw new IllegalArgumentException("사용자 이름 null 값 입력 불가");
         }
 
@@ -74,6 +74,7 @@ public class User extends BaseEntity{
 
         return this;
     }
+
     public User updatePassword(String password) {
         checkNullOrBlank(password, "비밀번호");
         this.password = password;
@@ -92,6 +93,7 @@ public class User extends BaseEntity{
         this.posts.add(post);
         post.setAuthor(this);
     }
+
     public void removePost(Post post) {
         this.posts.remove(post);
         post.setAuthor(null);
@@ -102,6 +104,7 @@ public class User extends BaseEntity{
         this.events.add(event);
         event.setHost(this);
     }
+
     public void removeEvent(Event event) {
         this.events.remove(event);
         event.setHost(null);
@@ -117,6 +120,7 @@ public class User extends BaseEntity{
         this.eventJoins.add(newEventJoin);
         event.getParticipants().add(newEventJoin);
     }
+
     public void removeEventJoin(Event event) {
         eventJoins.removeIf(ej -> ej.getEvent().equals(event));
         event.getParticipants().removeIf(ej -> ej.getParticipant().equals(this));
@@ -125,7 +129,7 @@ public class User extends BaseEntity{
     // Check Methods
     private void checkNullOrBlank(String value, String fieldName) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(fieldName+" 미입력");
+            throw new IllegalArgumentException(fieldName + " 미입력");
         }
     }
 }

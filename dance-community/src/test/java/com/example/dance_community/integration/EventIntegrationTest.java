@@ -5,7 +5,6 @@ import com.example.dance_community.entity.User;
 import com.example.dance_community.repository.EventRepository;
 import com.example.dance_community.repository.UserRepository;
 import com.example.dance_community.security.UserDetail;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,57 +30,56 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class EventIntegrationTest {
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private EventRepository eventRepository;
-    @Autowired private UserRepository userRepository;
+        @Autowired
+        private MockMvc mockMvc;
+        @Autowired
+        private EventRepository eventRepository;
+        @Autowired
+        private UserRepository userRepository;
 
-    @Test
-    @DisplayName("통합 테스트: 행사 생성부터 DB 저장 확인까지")
-    void createEvent_EndToEnd() throws Exception {
-        // given
-        User savedUser = userRepository.save(User.builder()
-                .email("test@email.com")
-                .password("password")
-                .nickname("Tester")
-                .build());
+        @Test
+        @DisplayName("통합 테스트: 행사 생성부터 DB 저장 확인까지")
+        void createEvent_EndToEnd() throws Exception {
+                // given
+                User savedUser = userRepository.save(User.builder()
+                                .email("test@email.com")
+                                .password("password")
+                                .nickname("Tester")
+                                .build());
 
-        MockMultipartFile imageFile = new MockMultipartFile(
-                "images",
-                "test.jpg",
-                "image/jpeg",
-                "dummy content".getBytes()
-        );
+                MockMultipartFile imageFile = new MockMultipartFile(
+                                "images",
+                                "test.jpg",
+                                "image/jpeg",
+                                "dummy content".getBytes());
 
-        UserDetail userDetail = new UserDetail(
-                savedUser.getUserId(),
-                savedUser.getEmail(),
-                savedUser.getNickname(),
-                null,
-                savedUser.getPassword()
-        );
+                UserDetail userDetail = new UserDetail(
+                                savedUser.getUserId(),
+                                savedUser.getEmail(),
+                                savedUser.getNickname(),
+                                null,
+                                savedUser.getPassword());
 
-        // when
-        mockMvc.perform(multipart("/events")
-                        .file(imageFile)
-                        .param("title", "Integration Event")
-                        .param("content", "Content")
-                        .param("scope", "GLOBAL")
-                        .param("type", "WORKSHOP")
-                        .param("locationName", "Seoul")
-                        .param("capacity", "50")
-                        .param("startsAt", LocalDateTime.now().toString())
-                        .param("endsAt", LocalDateTime.now().plusHours(2).toString())
+                // when
+                mockMvc.perform(multipart("/events")
+                                .file(imageFile)
+                                .param("title", "Integration Event")
+                                .param("content", "Content")
+                                .param("scope", "GLOBAL")
+                                .param("type", "WORKSHOP")
+                                .param("locationName", "Seoul")
+                                .param("capacity", "50")
+                                .param("startsAt", LocalDateTime.now().toString())
+                                .param("endsAt", LocalDateTime.now().plusHours(2).toString())
 
-                        .with(user(userDetail))
-                        .with(csrf())
-                )
-                .andExpect(status().isCreated());
+                                .with(user(userDetail))
+                                .with(csrf()))
+                                .andExpect(status().isCreated());
 
-        // then
-        List<Event> events = eventRepository.findAll();
-        assertThat(events).hasSize(1);
-        assertThat(events.getFirst().getTitle()).isEqualTo("Integration Event");
-        assertThat(events.getFirst().getHost().getUserId()).isEqualTo(savedUser.getUserId());
-    }
+                // then
+                List<Event> events = eventRepository.findAll();
+                assertThat(events).hasSize(1);
+                assertThat(events.getFirst().getTitle()).isEqualTo("Integration Event");
+                assertThat(events.getFirst().getHost().getUserId()).isEqualTo(savedUser.getUserId());
+        }
 }

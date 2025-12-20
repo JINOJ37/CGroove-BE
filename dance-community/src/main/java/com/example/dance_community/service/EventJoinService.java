@@ -97,8 +97,9 @@ public class EventJoinService {
                 .map(EventJoinResponse::from)
                 .orElseThrow(() -> new NotFoundException("신청 이력이 없습니다"));
     }
+
     public List<EventJoinResponse> getUserEvents(Long userId) {
-        User user = userRepository.findById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다"));
 
         return eventJoinRepository.findMyJoinedEvents(userId, EventJoinStatus.CONFIRMED)
@@ -106,6 +107,7 @@ public class EventJoinService {
                 .map(EventJoinResponse::from)
                 .toList();
     }
+
     public List<EventJoinResponse> getEventUsers(Long eventId) {
         if (!eventRepository.existsById(eventId)) {
             throw new NotFoundException("행사를 찾을 수 없습니다");
@@ -118,6 +120,7 @@ public class EventJoinService {
     public void softDeleteByUserId(Long userId) {
         eventJoinRepository.softDeleteByUserId(userId, EventJoinStatus.CANCELED);
     }
+
     public void softDeleteByClubId(Long clubId) {
         eventJoinRepository.softDeleteByClubId(clubId, EventJoinStatus.CANCELED);
     }
