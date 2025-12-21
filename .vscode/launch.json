@@ -12,10 +12,10 @@
         },
         {
             "type": "java",
-            "name": "DanceCommunityApplication",
+            "name": "CGrooveApplication",
             "request": "launch",
-            "mainClass": "com.example.dance_community.DanceCommunityApplication",
-            "projectName": "dance-community"
+            "mainClass": "com.example.cgroove.CGrooveApplication",
+            "projectName": "cgroove"
         }
     ]
 }
