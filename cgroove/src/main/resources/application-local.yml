@@ -1,0 +1,50 @@
+# 로컬 개발 환경 설정
+# 실행: ./gradlew bootRun 또는 IDE에서 실행 (기본 프로필)
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/cgroove-db
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080
+
+jwt:
+  secret: dGVzdF9zZWNyZXRfa2V5X2Zvcl9sb2NhbF9kZXZlbG9wbWVudF9wdXJwb3NlX29ubHlfdGVzdA==
+
+cors:
+  allowed-origins: http://localhost:5173,http://127.0.0.1:5173
+
+springdoc:
+  swagger-ui:
+    enabled: true
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    com.example.dance_community: debug
+
+# 로컬 파일 업로드 경로 (프로젝트 루트 기준 상대 경로)
+file:
+  upload:
+    base-dir: uploads
+    user-dir: users
+    club-dir: clubs
+    post-dir: posts
+    event-dir: events
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

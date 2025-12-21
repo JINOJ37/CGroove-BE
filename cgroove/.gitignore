@@ -1,0 +1,67 @@
+HELP.md
+CLAUDE.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+# 환경 변수 파일 (민감 정보)
+.env
+.env.local
+.env.*.local
+
+# application-prod.yml도 민감 정보 포함 가능
+# /src/main/resources/application-prod.yml
+
+# 업로드된 파일 제외 (추가!)
+uploads/
+!uploads/.gitkeep
+
+### Mac System Files (맥북 필수) ###
+.DS_Store
+._*
+
+### Logs (로그 파일 계속 쌓임) ###
+*.log
+logs/
+
+### Frontend / Node.js (토큰 폭탄 방지 ⭐) ###
+node_modules/
+dist/
+package-lock.json
+yarn.lock
+
+### Test Results ###
+test-results/
